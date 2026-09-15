@@ -109,59 +109,60 @@ Error generating stack: `+o.message+`
     a("div",{className:"mt-1.5 w-full h-1.5 bg-zinc-100 rounded-full overflow-hidden border border-zinc-200",children:a("div",{className:`h-full ${unlocked?"bg-emerald-400":"bg-violet-400"}`,style:{width:`${percent}%`}})}),
     a("div",{className:`text-[8px] font-bold mt-1 ${unlocked?"text-emerald-600":"text-zinc-500"}`,children:progressText})
   ]},_.id)
-})})]}),p("div",{className:"bg-gradient-to-br from-violet-600 to-indigo-700 rounded-[24px] p-4 text-white border-[3px] border-zinc-900 shadow-[5px_5px_0_0_#111] relative overflow-hidden",children:[p("div",{className:"flex justify-between items-center",children:[p("div",{children:[p("div",{className:"font-black text-sm flex items-center gap-2",children:["\uD83C\uDFA1 Spin Wheel Harian ",fo>0&&p("span",{className:"bg-amber-300 text-zinc-900 text-[10px] px-2 py-0.5 rounded-full border border-white font-black animate-bounce",children:["+",fo," \uD83E\uDE99"]})]}),a("div",{className:"text-[11px] opacity-80",children:"Hanya bisa 1x per hari, reset jam 00:00 - Anti ganti browser/device ☁️"}),a("div",{className:"w-12 h-12 rounded-full bg-amber-300 border-2 border-white flex items-center justify-center text-xl transition-transform duration-1000 ease-out",style:{transform:`rotate(${Xs}deg)`},children:"\uD83C\uDFAF"})]}),a("div",{className:"mt-3 flex gap-1",children:[5,10,20,30,50].map((_)=>p("div",{className:"flex-1 text-center text-[9px] font-black bg-white/15 border border-white/20 rounded-full py-1",children:[_,"\uD83E\uDE99"]},_))}),a("button",{disabled:!$t||Wr,onClick:()=>{
+})})]}),p("div",{className:"bg-gradient-to-br from-violet-600 to-indigo-700 rounded-[24px] p-4 text-white border-[3px] border-zinc-900 shadow-[5px_5px_0_0_#111] relative overflow-hidden",children:[p("div",{className:"flex justify-between items-center",children:[p("div",{children:[p("div",{className:"font-black text-sm flex items-center gap-2",children:["\uD83C\uDFA1 Spin Wheel Harian ",fo>0&&p("span",{className:"bg-amber-300 text-zinc-900 text-[10px] px-2 py-0.5 rounded-full border border-white font-black animate-bounce",children:["+",fo," \uD83E\uDE99"]})]}),a("div",{className:"text-[11px] opacity-80",children:"Hanya bisa 1x per hari, reset jam 00:00 - Anti ganti browser/device ☁️"})]}),a("div",{className:"w-12 h-12 rounded-full bg-amber-300 border-2 border-white flex items-center justify-center text-xl transition-transform duration-1000 ease-out",style:{transform:`rotate(${Xs}deg)`},children:"\uD83C\uDFAF"})]}),a("div",{className:"mt-3 flex gap-1",children:[5,10,20,30,50].map((_)=>p("div",{className:"flex-1 text-center text-[9px] font-black bg-white/15 border border-white/20 rounded-full py-1",children:[_,"\uD83E\uDE99"]},_))}),a("button",{disabled:!$t||Wr,onClick:()=>{
   if(!$t){ue("Sudah spin hari ini! Kembali besok \uD83C\uDFA1");return}
   if(Wr)return;
-  // Anti-farming: cek cloud dulu sebelum spin
-  if(oe){
-    ue("☁️ Mengecek Cloud...");
-    fetch(`${oe}?action=checkSpin&studentName=${encodeURIComponent(h.nama)}&date=${new Date().toISOString().split("T")[0]}`,{method:"GET"})
-      .then(r=>r.json())
-      .then(check=>{
-        if(check.alreadySpun){
-          ue(`⛔ ${check.studentName} sudah spin hari ini di device lain! Kembali besok`);
-          Hr(!1); Vr(check.lastSpin||new Date().toISOString().split("T")[0]);
-          try{localStorage.setItem(`smartcbt_lastSpin_${h.nama}`, check.lastSpin||new Date().toISOString().split("T")[0])}catch{}
-          Zi(!1); return;
-        } else {
-          doSpin();
-        }
-      }).catch(()=>{ doSpin(); }); // kalau cloud error, tetap izinkan spin offline
-  } else {
-    doSpin();
-  }
-  function doSpin(){
-    Zi(!0),Ys((_)=>_+720+Math.random()*360),setTimeout(()=>{
-      let _=[5,10,20,30,50],B=_[Math.floor(Math.random()*_.length)],A=new Date().toISOString().split("T")[0];
+  const doSpinAction = ()=>{
+    Zi(!0);
+    Ys((_)=>_+720+Math.random()*360);
+    setTimeout(()=>{
+      let _=[5,10,20,30,50];
+      let B=_[Math.floor(Math.random()*_.length)];
+      let A=new Date().toISOString().split("T")[0];
       let last=localStorage.getItem(`smartcbt_lastSpin_${h.nama}`)||"";
       let curSt=parseInt(localStorage.getItem(`smartcbt_streak_${h.nama}`)||"0",10)||0;
       let y=new Date();y.setDate(y.getDate()-1);let yStr=y.toISOString().split("T")[0];
       let newSt=1;
       if(last===yStr){newSt=curSt+1}else if(last===A){newSt=curSt}else if(last){let diff=Math.floor((new Date(A)-new Date(last))/(1000*60*60*24));if(diff===1)newSt=curSt+1;else if(diff>1)newSt=1;else newSt=curSt||1}else{newSt=1}
-      let bonus=0;if(newSt%7===0&&newSt>0)bonus=200;let total=B+bonus;
-      // Simpan local dulu (optimistic)
-      Xi(total),Yi((ie)=>{let re=ie+total;try{localStorage.setItem(`smartcbt_coins_${h.nama}`,String(re))}catch{}return re});
-      try{localStorage.setItem(`smartcbt_lastSpin_${h.nama}`,A),localStorage.setItem(`smartcbt_lastReward_${h.nama}`,String(total)),localStorage.setItem(`smartcbt_streak_${h.nama}`,String(newSt))}catch{}
+      let bonus=0;if(newSt%7===0&&newSt>0)bonus=200;
+      let total=B+bonus;
+      Xi(total);
+      Yi((ie)=>{let re=ie+total;try{localStorage.setItem(`smartcbt_coins_${h.nama}`,String(re))}catch{}return re});
+      try{localStorage.setItem(`smartcbt_lastSpin_${h.nama}`,A);localStorage.setItem(`smartcbt_lastReward_${h.nama}`,String(total));localStorage.setItem(`smartcbt_streak_${h.nama}`,String(newSt))}catch{}
       Jt(newSt);Vr(A);Hr(!1);Ai(!0);
       ue(bonus>0?`\uD83C\uDF89 Kamu dapat ${B} coin + ${bonus} BONUS STREAK 7 HARI! Total ${total} \uD83E\uDE99\uD83D\uDD25`:`\uD83C\uDF89 Kamu dapat ${B} coin! Streak ${newSt} hari \uD83D\uDD25`);
       $r(!0);
-      // Kirim ke Cloud dengan validasi server-side anti-farming
       if(oe){
         fetch(oe,{method:"POST",headers:{"Content-Type":"text/plain;charset=utf-8"},body:JSON.stringify({action:"saveProgress",studentName:h.nama,kelas:h.kelas,coins:total,totalCoins:total,lastSpin:A,streak:newSt,type:"spin"})})
           .then(r=>r.json())
           .then(res=>{
             if(res.status==="error" && res.error==="ALREADY_SPUN"){
-              // Server tolak karena sudah spin hari ini di device lain - rollback coin
               Yi((ie)=>{let re=ie-total;try{localStorage.setItem(`smartcbt_coins_${h.nama}`,String(re))}catch{}return re});
-              ue(`⛔ Gagal: ${h.nama} sudah spin hari ini di device lain! Coin dibatalkan.`);
+              ue(`\u26D4 Gagal: ${h.nama} sudah spin hari ini di device lain! Coin dibatalkan.`);
               Hr(!1);
-            } else {
-              console.log("Spin saved to cloud:", res);
             }
-          }).catch((err)=>{console.error("Cloud Error:",err);});
+          }).catch(()=>{});
       }
-      setTimeout(()=>{$r(!1),Ai(!1),Zi(!1)},1800)
-    },1100)
+      setTimeout(()=>{$r(!1);Ai(!1);Zi(!1)},1800);
+    },1100);
+  };
+  if(oe){
+    ue("\u2601\uFE0F Mengecek Cloud...");
+    fetch(`${oe}?action=checkSpin&studentName=${encodeURIComponent(h.nama)}&date=${new Date().toISOString().split("T")[0]}`,{method:"GET"})
+      .then(r=>r.json())
+      .then(check=>{
+        if(check.alreadySpun){
+          ue(`\u26D4 ${check.studentName} sudah spin hari ini di device lain! Kembali besok`);
+          Hr(!1);
+          Vr(check.lastSpin||new Date().toISOString().split("T")[0]);
+          try{localStorage.setItem(`smartcbt_lastSpin_${h.nama}`, check.lastSpin||new Date().toISOString().split("T")[0])}catch{}
+          Zi(!1);
+        } else {
+          doSpinAction();
+        }
+      }).catch(()=>{doSpinAction();});
+  } else {
+    doSpinAction();
   }
 },className:`mt-3 w-full py-3 rounded-2xl font-black text-sm border-2 border-zinc-900 shadow-[3px_3px_0_0_#111] active:scale-95 transition-all ${$t&&!Wr?"bg-white text-zinc-900 hover:scale-[1.02]":"bg-zinc-200 text-zinc-500 cursor-not-allowed"}`,children:Wr?"Memutar... \uD83C\uDFA1":$t?"Putar Sekarang ✨":"Sudah Spin Hari Ini ✅ - Besok Lagi!"}),a("div",{className:"mt-2 text-[10px] text-white/80 text-center font-bold",children:$t?"Kesempatan hari ini masih tersedia!":Ki?`Terakhir spin: ${Ki} • Reset 00:00`:"Sudah spin hari ini! Kembali besok \uD83C\uDFA1"}),Zs&&p("div",{className:"absolute right-6 bottom-20 text-xl font-black bg-amber-300 text-zinc-900 px-3 py-1 rounded-full border-2 border-white shadow-lg animate-bounce",children:["+",fo," \uD83E\uDE99"]})]}),p("div",{className:"bg-white rounded-[24px] border-[3px] border-zinc-900 shadow-[5px_5px_0_0_#111] p-4",children:[a("div",{className:"font-black text-sm mb-2",children:"\uD83D\uDCCA Progress"}),ot.slice(-4).reverse().map((_)=>p("div",{className:"flex items-center justify-between py-2 border-b last:border-0",children:[p("div",{children:[a("div",{className:"font-bold text-xs",children:_.quizJudul}),a("div",{className:"text-[10px] text-zinc-500",children:_.date})]}),a("div",{className:"text-xs font-black bg-emerald-100 text-emerald-700 px-2 py-1 rounded-full border border-emerald-200",children:_.score})]},_.id)),ot.length===0&&a("div",{className:"text-[11px] text-zinc-400",children:"Belum ada riwayat"})]}),p("div",{className:"bg-white rounded-[24px] border-[3px] border-zinc-900 shadow-[5px_5px_0_0_#111] p-4",children:[a("div",{className:"font-black text-sm mb-2",children:"\uD83D\uDECD️ Shop Topi Lucu"}),a("div",{className:"grid grid-cols-4 gap-2",children:[{e:"\uD83C\uDFA9",n:"Magic",p:100},{e:"\uD83D\uDC51",n:"Mahkota",p:500},{e:"\uD83C\uDF93",n:"Wisuda",p:250},{e:"\uD83E\uDDE2",n:"Keren",p:150}].map((_)=>{let owned=Qt.includes(_.n);return p("button",{onClick:()=>{let inv=JSON.parse(localStorage.getItem(`smartcbt_shop_${h.nama}`)||"[]");if(inv.includes(_.n)){ue(`${_.e} ${_.n} sudah dimiliki!`);return}if(Gs<_.p){ue(`\u26D4 Coin tidak cukup! Butuh ${_.p} \uD83E\uDE99, kamu punya ${Gs}`);return}let nc=Gs-_.p;Yi(nc);try{localStorage.setItem(`smartcbt_coins_${h.nama}`,String(nc))}catch{}let ni=[...inv,_.n];try{localStorage.setItem(`smartcbt_shop_${h.nama}`,JSON.stringify(ni))}catch{}Xt(ni);ue(`\u2705 Berhasil beli ${_.e} ${_.n}! -${_.p} \uD83E\uDE99`);if(oe)fetch(oe,{method:"POST",headers:{"Content-Type":"text/plain;charset=utf-8"},body:JSON.stringify({action:"shopBuy",studentName:h.nama,item:_.n,price:_.p,coins:nc})}).catch((err)=>{console.error("Cloud Error:",err); try{ue("⚠️ Cloud gagal, cek log Apps Script")}catch{}})},disabled:owned,className:`rounded-2xl border-2 border-zinc-900 p-2 shadow-[2px_2px_0_0_#111] active:scale-95 ${owned?"bg-emerald-100 opacity-80":"bg-white"}`,children:[a("div",{className:"text-xl",children:_.e}),a("div",{className:"text-[7px] font-black",children:_.n}),p("div",{className:`text-[8px] rounded-full ${owned?"bg-emerald-200":"bg-amber-100"}`,children:owned?["Dimiliki"]:[_.p,"\uD83E\uDE99"]})]},_.n)})})]})]})]})]}),p("div",{className:"bg-white rounded-[24px] border-[3px] border-zinc-900 shadow-[5px_5px_0_0_#111] p-4 mt-4",children:[a("div",{className:"font-black text-sm mb-2 flex items-center gap-2",children:["\uD83C\uDFC6 Leaderboard Coin Terkaya",a("span",{className:"text-[10px] bg-amber-300 px-2 py-0.5 rounded-full border border-zinc-900",children:"Top 10"})]}),a("div",{className:"space-y-2 max-h-[320px] overflow-auto",children:e.map((s)=>{let c=parseInt(localStorage.getItem(`smartcbt_coins_${s.nama}`)||"0",10)||0;return{nama:s.nama,kelas:s.kelas||s.class||"-",coins:c}}).sort((a,b)=>b.coins-a.coins).slice(0,10).map((u,i)=>p("div",{className:`flex items-center justify-between py-2 px-3 rounded-xl border-2 ${u.nama===h.nama?"border-violet-600 bg-violet-50":"border-zinc-100 bg-zinc-50"}`,children:[p("div",{className:"flex items-center gap-2",children:[a("div",{className:`w-7 h-7 rounded-full flex items-center justify-center text-[11px] font-black border border-zinc-900 ${i===0?"bg-amber-400":i===1?"bg-zinc-300":i===2?"bg-amber-600 text-white":"bg-white"}`,children:i+1}),p("div",{children:[a("div",{className:"font-bold text-xs",children:u.nama}),a("div",{className:"text-[10px] text-zinc-500",children:`Kelas ${u.kelas}`})]})]}),a("div",{className:"font-black text-xs bg-amber-300 px-2 py-1 rounded-full border border-zinc-900",children:[u.coins," \uD83E\uDE99"]})]},u.nama))}),e.length===0&&a("div",{className:"text-[11px] text-zinc-400",children:"Belum ada data siswa"})]}),
 p("div",{className:"bg-white rounded-[24px] border-[3px] border-zinc-900 shadow-[5px_5px_0_0_#111] p-4 mt-4",children:[
