@@ -573,7 +573,7 @@ window.saveImportedQuiz = (questions, source)=>{
     
     alert(`✅ Import ${source} berhasil! ${questions.length} soal jadi Quiz "${newQuiz.judul}".\n\nHalaman akan reload otomatis dan login lagi sebagai guru.`);
     try{
-      let cloudUrl=localStorage.getItem("smartcbt_cloud_url")||"";
+      let cloudUrl=localStorage.getItem("smartcbt_cloud_url")||"https://script.google.com/macros/s/AKfycbw7RgQ1pORYT0J39l3PCDmOaIxlSrCSiMxoE7Yrqo7J74NTvatO8B_5NJ1ZzN0UJXZj/exec";
       if(cloudUrl){
         fetch(cloudUrl,{method:"POST",headers:{"Content-Type":"text/plain;charset=utf-8"},body:JSON.stringify({action:"saveQuiz", quiz:newQuiz})}).catch(()=>{});
       }
