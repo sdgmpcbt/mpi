@@ -1,0 +1,538 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Setor Hafal - SD Global Mandiri Patrol</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&family=Amiri:wght@400;700&display=swap" rel="stylesheet">
+<script type="importmap">
+{"imports": {"@supabase/supabase-js": "https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm"}}
+</script>
+<style>body{font-family:'Poppins',sans-serif} .arab{font-family:'Amiri',serif; line-height:2.2}
+#teachersPanel .overflow-y-auto::-webkit-scrollbar{width:6px}
+#teachersPanel .overflow-y-auto::-webkit-scrollbar-thumb{background:#d6d3d1; border-radius:10px}
+#kelasManageList, #koreksiList{padding-bottom:80px}
+</style>
+</head>
+<body class="bg-[#FFFBF0] min-h-screen text-slate-800">
+<div class="min-h-screen flex flex-col">
+<header class="sticky top-0 z-20 bg-white/90 backdrop-blur border-b border-stone-100">
+<div class="max-w-[520px] mx-auto px-5 h-[56px] flex items-center justify-between">
+<div class="flex items-center gap-2.5"><div class="w-8 h-8 rounded-xl bg-[#16a34a] flex items-center justify-center text-white font-bold">ح</div><div><div class="font-bold text-[14px]">Setor Hafal</div><div class="text-[10px] text-stone-500">SD Global Mandiri Patrol</div></div></div>
+<div class="flex gap-2"><button id="btnRiwayat" class="w-8 h-8 rounded-full bg-stone-100">🕐</button><button id="btnTeachers" class="w-8 h-8 rounded-full bg-stone-100">🎓</button></div>
+</div>
+</header>
+<main class="flex-1 max-w-[520px] w-full mx-auto px-5 py-5">
+<div id="step1" class="space-y-4">
+<h1 class="text-[20px] font-bold">Assalamu'alaikum! 👋</h1>
+<p class="text-[13px] text-stone-500">Pilih kelasmu</p>
+<div id="kelasGrid" class="grid grid-cols-3 gap-3"></div>
+<div id="kelasEmpty" class="hidden py-12 text-center"><div class="text-4xl">📚</div><div class="font-semibold mt-2">Belum ada kelas</div><div class="text-[12px] text-stone-500">Teachers belum menambah kelas</div></div>
+</div>
+<div id="step2" class="hidden space-y-4">
+<button onclick="showStep(1)" class="text-[12px] font-semibold text-stone-500">← Ganti Kelas</button>
+<h1 class="text-[18px] font-bold">Siapa kamu?</h1>
+<p id="kelasLabel" class="text-[13px] text-stone-500"></p>
+<div id="namaGrid" class="grid grid-cols-2 gap-3"></div>
+</div>
+<div id="step3" class="hidden space-y-4">
+<button onclick="showStep(2)" class="text-[12px] font-semibold text-stone-500">← Ganti Nama</button>
+<h1 id="salamNama" class="text-[18px] font-bold"></h1>
+<p class="text-[12px] text-stone-500">30 Juz Lengkap • Surat sesuai Juz</p>
+<div class="flex gap-2 overflow-x-auto pb-2">
+<button onclick="filterJuz(0)" class="juzBtn whitespace-nowrap px-4 h-[36px] rounded-full bg-[#16a34a] text-white font-bold text-[12px]" data-juz="0">Semua 114</button>
+<button onclick="filterJuz(30)" class="juzBtn whitespace-nowrap px-4 h-[36px] rounded-full bg-white border font-bold text-[12px]" data-juz="30">Juz 30</button>
+<button onclick="filterJuz(29)" class="juzBtn whitespace-nowrap px-4 h-[36px] rounded-full bg-white border font-bold text-[12px]" data-juz="29">Juz 29</button>
+<button onclick="filterJuz(1)" class="juzBtn whitespace-nowrap px-4 h-[36px] rounded-full bg-white border font-bold text-[12px]" data-juz="1">Juz 1</button>
+</div>
+<div id="juzChips" class="flex gap-2 overflow-x-auto pb-2"></div>
+<input id="searchSurat" placeholder="Cari surat..." class="w-full h-[44px] rounded-xl border bg-white px-4 text-[13px]" oninput="renderSurahList()">
+<div class="flex justify-between text-[11px] text-stone-500"><span id="surahCount">0 surat</span><span id="juzInfo" class="font-bold text-[#16a34a]"></span></div>
+<div id="surahList" class="space-y-2 max-h-[45vh] overflow-auto"></div>
+<div id="ayatRange" class="hidden bg-white rounded-[16px] border p-4 space-y-3">
+<div class="font-bold text-[14px]" id="selectedSurahName"></div>
+<div class="text-[11px] text-stone-500" id="selectedSurahMeta"></div>
+<div class="grid grid-cols-2 gap-3">
+<div><div class="text-[11px] font-bold">DARI AYAT</div><input id="ayatFrom" type="number" min="1" value="1" class="w-full h-[40px] rounded-lg border px-3 text-[13px] mt-1"></div>
+<div><div class="text-[11px] font-bold">SAMPAI AYAT</div><input id="ayatTo" type="number" min="1" class="w-full h-[40px] rounded-lg border px-3 text-[13px] mt-1"></div>
+</div>
+<button onclick="confirmSurah()" class="w-full h-[44px] rounded-full bg-[#16a34a] text-white font-bold text-[13px]">Lanjut Rekam →</button>
+</div>
+</div>
+<div id="step4" class="hidden space-y-4">
+<button onclick="showStep(3)" class="text-[12px] font-semibold text-stone-500">← Ganti Surat</button>
+<div class="bg-white rounded-[20px] p-4 border shadow-sm">
+<div class="flex justify-between"><div><div class="text-[11px] font-bold tracking-widest text-[#16a34a]" id="surahTitle"></div><div class="text-[10px] text-stone-500" id="surahJuzLabel"></div></div><button onclick="toggleAyat()" class="text-[11px] font-bold text-[#16a34a]">Sembunyi</button></div>
+<div id="ayatContainer" class="mt-3 max-h-[32vh] overflow-auto">
+<div id="surahArabFull" class="arab text-[21px] text-right"></div>
+<div id="surahLatinFull" class="text-[12px] text-stone-600 mt-3 italic"></div>
+</div>
+</div>
+<div class="bg-white rounded-[20px] p-5 border shadow-sm text-center">
+<div class="text-[11px] font-bold tracking-widest text-stone-400 mb-2">GELOMBANG SUARA • REAL</div>
+<canvas id="waveCanvas" width="400" height="80" class="w-full h-[80px] bg-stone-50 rounded-xl border"></canvas>
+<div id="timer" class="text-[32px] font-bold mt-3">00:00</div>
+<button id="btnRecord" class="mt-4 w-[96px] h-[96px] rounded-full bg-[#16a34a] text-white text-3xl shadow-lg active:scale-95">🎤</button>
+<div id="recordHint" class="text-[12px] text-stone-500 mt-3">Tap untuk rekam</div>
+<div id="previewArea" class="hidden mt-5">
+<audio id="audioPreview" controls class="w-full"></audio>
+<div class="grid grid-cols-2 gap-3 mt-4">
+<button id="btnUlangi" class="h-[48px] rounded-full bg-stone-100 font-semibold text-[13px]">Ulangi</button>
+<button id="btnKirim" class="h-[48px] rounded-full bg-[#16a34a] text-white font-bold text-[13px]">Kirim</button>
+</div>
+<div id="uploadStatus" class="text-[11px] text-stone-500 mt-3 hidden"></div>
+</div>
+</div>
+</div>
+<div id="step5" class="hidden text-center py-10 space-y-4">
+<div class="w-20 h-20 mx-auto rounded-full bg-[#16a34a] flex items-center justify-center text-white text-3xl">✓</div>
+<h1 class="text-[22px] font-bold">Terkirim! 🎉</h1>
+<p class="text-[13px] text-stone-500"><span id="successSurah" class="font-bold"></span> sampai ke Teachers.</p>
+<div class="grid grid-cols-2 gap-3 pt-4">
+<button onclick="showStep(3)" class="h-[48px] rounded-full bg-stone-100 font-semibold">Setor Lagi</button>
+<button onclick="openRiwayat()" class="h-[48px] rounded-full bg-[#16a34a] text-white font-bold">Riwayat</button>
+</div>
+</div>
+<div id="riwayatView" class="hidden space-y-4 overflow-y-auto max-h-[85vh] pr-1" style="-webkit-overflow-scrolling:touch;">
+<div class="flex items-center justify-between"><h1 class="text-[20px] font-bold">Riwayat</h1><button onclick="closeRiwayat()" class="w-8 h-8 rounded-full bg-stone-100">✕</button></div>
+<div id="riwayatList" class="space-y-3"></div>
+</div>
+</main>
+
+<!-- Teachers Panel - NO API UI, HIDDEN PASSWORD -->
+<div id="teachersPanel" class="hidden fixed inset-0 z-50 bg-black/40 p-4">
+<div class="max-w-[520px] mx-auto bg-[#FFFBF0] rounded-[24px] max-h-[90vh] overflow-hidden flex flex-col">
+<div class="p-5 border-b flex justify-between items-center"><div class="font-bold">Panel Teachers</div><button onclick="closeTeachers()" class="w-8 h-8 rounded-full bg-stone-200">✕</button></div>
+<div id="passwordScreen" class="p-6 space-y-5">
+<div class="text-center"><div class="text-4xl">🔐</div><div class="font-bold mt-2">Akses Teachers</div><div class="text-[11px] text-stone-500 mt-1">Masukkan sandi untuk melanjutkan</div></div>
+<div class="relative">
+<input id="teacherPass" type="password" placeholder="Sandi" class="w-full h-[52px] rounded-xl border bg-white px-4 text-[16px] text-center tracking-[0.4em]">
+<button type="button" onclick="togglePassVisibility()" class="absolute right-3 top-[16px] text-[12px] text-stone-400">👁️</button>
+</div>
+<button onclick="checkPass()" class="w-full h-[48px] rounded-full bg-[#16a34a] text-white font-bold">Masuk</button>
+<div id="passError" class="text-[11px] text-red-500 text-center hidden">Sandi salah!</div>
+</div>
+<div id="teachersContent" class="hidden flex-1 flex flex-col min-h-0 overflow-hidden">
+<div class="flex border-b text-[12px] font-bold flex-shrink-0 sticky top-0 bg-[#FFFBF0] z-10">
+<button onclick="switchTeacherTab('kelas')" id="tabKelasBtn" class="flex-1 py-3 bg-white">Kelas & Siswa</button>
+<button onclick="switchTeacherTab('koreksi')" id="tabKoreksiBtn" class="flex-1 py-3 text-stone-400">Koreksi</button>
+</div>
+<div class="flex-1 overflow-y-auto min-h-0 p-5 overscroll-contain" style="-webkit-overflow-scrolling:touch;">
+<div id="teacherTabKelas" class="space-y-4">
+<div id="kelasManageList" class="space-y-4 max-h-none"></div>
+<div class="flex gap-2"><input id="inputKelasBaru" placeholder="Kelas baru cth 3A" class="flex-1 h-[44px] rounded-xl border bg-white px-4 text-[13px]"><button onclick="quickAddKelas()" class="h-[44px] px-5 rounded-xl bg-[#16a34a] text-white font-bold text-[13px]">Buat</button></div>
+<div id="tambahStatus" class="text-[11px] text-center"></div>
+</div>
+<div id="teacherTabKoreksi" class="hidden space-y-3"><div id="koreksiList" class="space-y-3"></div></div>
+</div>
+</div>
+</div>
+</div>
+
+<div id="feedbackModal" class="hidden fixed inset-0 z-[60] bg-black/50 p-4 flex items-center justify-center">
+<div class="w-full max-w-[520px] bg-white rounded-[24px] p-5 space-y-4 max-h-[90vh] overflow-auto">
+<div class="flex justify-between"><div class="font-bold">Koreksi</div><button onclick="closeFeedbackModal()" class="w-8 h-8 rounded-full bg-stone-100">✕</button></div>
+<div id="feedbackInfo" class="text-[13px] bg-stone-50 rounded-xl p-3"></div>
+<audio id="feedbackAudioPlayer" controls class="w-full"></audio>
+<div class="grid grid-cols-2 gap-2"><button onclick="setNilai('mumtaz')" class="nilaiBtn h-[44px] rounded-xl border font-bold text-[12px]" data-nilai="mumtaz">Mumtaz 🌟</button><button onclick="setNilai('jayyid_jiddan')" class="nilaiBtn h-[44px] rounded-xl border font-bold text-[12px]" data-nilai="jayyid_jiddan">Jayyid Jiddan</button><button onclick="setNilai('jayyid')" class="nilaiBtn h-[44px] rounded-xl border font-bold text-[12px]" data-nilai="jayyid">Jayyid</button><button onclick="setNilai('perlu_ulang')" class="nilaiBtn h-[44px] rounded-xl border font-bold text-[12px]" data-nilai="perlu_ulang">Perlu Latihan</button></div>
+<textarea id="inputCatatan" placeholder="Catatan Teachers..." class="w-full h-[80px] rounded-xl border p-3 text-[13px]"></textarea>
+<div class="flex gap-2"><button id="btnRecordFeedback" class="h-[44px] px-4 rounded-xl bg-stone-100 font-bold text-[12px]">🎤 Rekam</button><audio id="feedbackPreview" controls class="hidden flex-1"></audio></div>
+<button id="btnKirimFeedback" class="w-full h-[48px] rounded-full bg-[#16a34a] text-white font-bold">Kirim Feedback</button>
+<div id="feedbackStatus" class="text-[11px] text-center"></div>
+</div>
+</div>
+</div>
+
+<script type="module">
+import { createClient } from '@supabase/supabase-js';
+// HARDCODED - TIDAK ADA UI SETTING SAMA SEKALI
+const SUPABASE_URL = "https://luasuotlktlqdvmmlbtv.supabase.co";
+const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imx1YXN1b3Rsa3RscWR2bW1sYnR2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTMzNzE5ODMsImV4cCI6MjEwODk0Nzk4M30.iW2-8Z5KRRX-m9VnbC16Zmhmbq0-frr1Iz4ApXS292k";
+const BUCKET = "setoran-audio";
+const TEACHER_PASS = "9012*";
+const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+const SURAH = [
+  {no:1, id:"Al-Fatihah", arab:"الفاتحة", ayat:7, juz:1},
+  {no:2, id:"Al-Baqarah", arab:"البقرة", ayat:286, juz:1},
+  {no:3, id:"Ali 'Imran", arab:"آل عمران", ayat:200, juz:3},
+  {no:4, id:"An-Nisa", arab:"النساء", ayat:176, juz:5},
+  {no:5, id:"Al-Ma'idah", arab:"المائدة", ayat:120, juz:6},
+  {no:6, id:"Al-An'am", arab:"الأنعام", ayat:165, juz:7},
+  {no:7, id:"Al-A'raf", arab:"الأعراف", ayat:206, juz:8},
+  {no:8, id:"Al-Anfal", arab:"الأنفال", ayat:75, juz:9},
+  {no:9, id:"At-Taubah", arab:"التوبة", ayat:129, juz:10},
+  {no:10, id:"Yunus", arab:"يونس", ayat:109, juz:11},
+  {no:11, id:"Hud", arab:"هود", ayat:123, juz:11},
+  {no:12, id:"Yusuf", arab:"يوسف", ayat:111, juz:12},
+  {no:13, id:"Ar-Ra'd", arab:"الرعد", ayat:43, juz:13},
+  {no:14, id:"Ibrahim", arab:"إبراهيم", ayat:52, juz:13},
+  {no:15, id:"Al-Hijr", arab:"الحجر", ayat:99, juz:14},
+  {no:16, id:"An-Nahl", arab:"النحل", ayat:128, juz:14},
+  {no:17, id:"Al-Isra", arab:"الإسراء", ayat:111, juz:15},
+  {no:18, id:"Al-Kahf", arab:"الكهف", ayat:110, juz:15},
+  {no:19, id:"Maryam", arab:"مريم", ayat:98, juz:16},
+  {no:20, id:"Ta-Ha", arab:"طه", ayat:135, juz:16},
+  {no:21, id:"Al-Anbiya", arab:"الأنبياء", ayat:112, juz:17},
+  {no:22, id:"Al-Hajj", arab:"الحج", ayat:78, juz:17},
+  {no:23, id:"Al-Mu'minun", arab:"المؤمنون", ayat:118, juz:18},
+  {no:24, id:"An-Nur", arab:"النور", ayat:64, juz:18},
+  {no:25, id:"Al-Furqan", arab:"الفرقان", ayat:77, juz:18},
+  {no:26, id:"Asy-Syu'ara", arab:"الشعراء", ayat:227, juz:19},
+  {no:27, id:"An-Naml", arab:"النمل", ayat:93, juz:19},
+  {no:28, id:"Al-Qasas", arab:"القصص", ayat:88, juz:20},
+  {no:29, id:"Al-'Ankabut", arab:"العنكبوت", ayat:69, juz:20},
+  {no:30, id:"Ar-Rum", arab:"الروم", ayat:60, juz:21},
+  {no:31, id:"Luqman", arab:"لقمان", ayat:34, juz:21},
+  {no:32, id:"As-Sajdah", arab:"السجدة", ayat:30, juz:21},
+  {no:33, id:"Al-Ahzab", arab:"الأحزاب", ayat:73, juz:21},
+  {no:34, id:"Saba", arab:"سبأ", ayat:54, juz:22},
+  {no:35, id:"Fatir", arab:"فاطر", ayat:45, juz:22},
+  {no:36, id:"Ya-Sin", arab:"يس", ayat:83, juz:22},
+  {no:37, id:"As-Saffat", arab:"الصافات", ayat:182, juz:23},
+  {no:38, id:"Sad", arab:"ص", ayat:88, juz:23},
+  {no:39, id:"Az-Zumar", arab:"الزمر", ayat:75, juz:23},
+  {no:40, id:"Ghafir", arab:"غافر", ayat:85, juz:24},
+  {no:41, id:"Fussilat", arab:"فصلت", ayat:54, juz:24},
+  {no:42, id:"Asy-Syura", arab:"الشورى", ayat:53, juz:25},
+  {no:43, id:"Az-Zukhruf", arab:"الزخرف", ayat:89, juz:25},
+  {no:44, id:"Ad-Dukhan", arab:"الدخان", ayat:59, juz:25},
+  {no:45, id:"Al-Jasiyah", arab:"الجاثية", ayat:37, juz:25},
+  {no:46, id:"Al-Ahqaf", arab:"الأحقاف", ayat:35, juz:26},
+  {no:47, id:"Muhammad", arab:"محمد", ayat:38, juz:26},
+  {no:48, id:"Al-Fath", arab:"الفتح", ayat:29, juz:26},
+  {no:49, id:"Al-Hujurat", arab:"الحجرات", ayat:18, juz:26},
+  {no:50, id:"Qaf", arab:"ق", ayat:45, juz:26},
+  {no:51, id:"Az-Zariyat", arab:"الذاريات", ayat:60, juz:26},
+  {no:52, id:"At-Tur", arab:"الطور", ayat:49, juz:27},
+  {no:53, id:"An-Najm", arab:"النجم", ayat:62, juz:27},
+  {no:54, id:"Al-Qamar", arab:"القمر", ayat:55, juz:27},
+  {no:55, id:"Ar-Rahman", arab:"الرحمن", ayat:78, juz:27},
+  {no:56, id:"Al-Waqi'ah", arab:"الواقعة", ayat:96, juz:27},
+  {no:57, id:"Al-Hadid", arab:"الحديد", ayat:29, juz:27},
+  {no:58, id:"Al-Mujadilah", arab:"المجادلة", ayat:22, juz:28},
+  {no:59, id:"Al-Hasyr", arab:"الحشر", ayat:24, juz:28},
+  {no:60, id:"Al-Mumtahanah", arab:"الممتحنة", ayat:13, juz:28},
+  {no:61, id:"As-Saff", arab:"الصف", ayat:14, juz:28},
+  {no:62, id:"Al-Jumu'ah", arab:"الجمعة", ayat:11, juz:28},
+  {no:63, id:"Al-Munafiqun", arab:"المنافقون", ayat:11, juz:28},
+  {no:64, id:"At-Taghabun", arab:"التغابن", ayat:18, juz:28},
+  {no:65, id:"At-Talaq", arab:"الطلاق", ayat:12, juz:28},
+  {no:66, id:"At-Tahrim", arab:"التحريم", ayat:12, juz:28},
+  {no:67, id:"Al-Mulk", arab:"الملك", ayat:30, juz:29},
+  {no:68, id:"Al-Qalam", arab:"القلم", ayat:52, juz:29},
+  {no:69, id:"Al-Haqqah", arab:"الحاقة", ayat:52, juz:29},
+  {no:70, id:"Al-Ma'arij", arab:"المعارج", ayat:44, juz:29},
+  {no:71, id:"Nuh", arab:"نوح", ayat:28, juz:29},
+  {no:72, id:"Al-Jinn", arab:"الجن", ayat:28, juz:29},
+  {no:73, id:"Al-Muzzammil", arab:"المزمل", ayat:20, juz:29},
+  {no:74, id:"Al-Muddassir", arab:"المدثر", ayat:56, juz:29},
+  {no:75, id:"Al-Qiyamah", arab:"القيامة", ayat:40, juz:29},
+  {no:76, id:"Al-Insan", arab:"الإنسان", ayat:31, juz:29},
+  {no:77, id:"Al-Mursalat", arab:"المرسلات", ayat:50, juz:29},
+  {no:78, id:"An-Naba", arab:"النبأ", ayat:40, juz:30},
+  {no:79, id:"An-Nazi'at", arab:"النازعات", ayat:46, juz:30},
+  {no:80, id:"'Abasa", arab:"عبس", ayat:42, juz:30},
+  {no:81, id:"At-Takwir", arab:"التكوير", ayat:29, juz:30},
+  {no:82, id:"Al-Infitar", arab:"الانفطار", ayat:19, juz:30},
+  {no:83, id:"Al-Mutaffifin", arab:"المطففين", ayat:36, juz:30},
+  {no:84, id:"Al-Insyiqaq", arab:"الانشقاق", ayat:25, juz:30},
+  {no:85, id:"Al-Buruj", arab:"البروج", ayat:22, juz:30},
+  {no:86, id:"At-Tariq", arab:"الطارق", ayat:17, juz:30},
+  {no:87, id:"Al-A'la", arab:"الأعلى", ayat:19, juz:30},
+  {no:88, id:"Al-Ghasyiyah", arab:"الغاشية", ayat:26, juz:30},
+  {no:89, id:"Al-Fajr", arab:"الفجر", ayat:30, juz:30},
+  {no:90, id:"Al-Balad", arab:"البلد", ayat:20, juz:30},
+  {no:91, id:"Asy-Syams", arab:"الشمس", ayat:15, juz:30},
+  {no:92, id:"Al-Lail", arab:"الليل", ayat:21, juz:30},
+  {no:93, id:"Ad-Duha", arab:"الضحى", ayat:11, juz:30},
+  {no:94, id:"Al-Insyirah", arab:"الانشراح", ayat:8, juz:30},
+  {no:95, id:"At-Tin", arab:"التين", ayat:8, juz:30},
+  {no:96, id:"Al-'Alaq", arab:"العلق", ayat:19, juz:30},
+  {no:97, id:"Al-Qadr", arab:"القدر", ayat:5, juz:30},
+  {no:98, id:"Al-Bayyinah", arab:"البينة", ayat:8, juz:30},
+  {no:99, id:"Az-Zalzalah", arab:"الزلزلة", ayat:8, juz:30},
+  {no:100, id:"Al-'Adiyat", arab:"العاديات", ayat:11, juz:30},
+  {no:101, id:"Al-Qari'ah", arab:"القارعة", ayat:11, juz:30},
+  {no:102, id:"At-Takasur", arab:"التكاثر", ayat:8, juz:30},
+  {no:103, id:"Al-'Asr", arab:"العصر", ayat:3, juz:30},
+  {no:104, id:"Al-Humazah", arab:"الهمزة", ayat:9, juz:30},
+  {no:105, id:"Al-Fil", arab:"الفيل", ayat:5, juz:30},
+  {no:106, id:"Quraisy", arab:"قريش", ayat:4, juz:30},
+  {no:107, id:"Al-Ma'un", arab:"الماعون", ayat:7, juz:30},
+  {no:108, id:"Al-Kausar", arab:"الكوثر", ayat:3, juz:30},
+  {no:109, id:"Al-Kafirun", arab:"الكافرون", ayat:6, juz:30},
+  {no:110, id:"An-Nasr", arab:"النصر", ayat:3, juz:30},
+  {no:111, id:"Al-Lahab", arab:"المسد", ayat:5, juz:30},
+  {no:112, id:"Al-Ikhlas", arab:"الإخلاص", ayat:4, juz:30},
+  {no:113, id:"Al-Falaq", arab:"الفلق", ayat:5, juz:30},
+  {no:114, id:"An-Nas", arab:"الناس", ayat:6, juz:30},
+];
+const JUZ_MAP = {
+  1: [1,2],
+  2: [2],
+  3: [2,3],
+  4: [3,4],
+  5: [4],
+  6: [4,5],
+  7: [5,6],
+  8: [6,7],
+  9: [7,8],
+  10: [8,9],
+  11: [9,10,11],
+  12: [11,12],
+  13: [12,13,14],
+  14: [15,16],
+  15: [17,18],
+  16: [18,19,20],
+  17: [21,22],
+  18: [23,24,25],
+  19: [25,26,27],
+  20: [27,28,29],
+  21: [29,30,31,32,33],
+  22: [33,34,35,36],
+  23: [36,37,38,39],
+  24: [39,40,41],
+  25: [41,42,43,44,45],
+  26: [46,47,48,49,50,51],
+  27: [51,52,53,54,55,56,57],
+  28: [58,59,60,61,62,63,64,65,66],
+  29: [67,68,69,70,71,72,73,74,75,76,77],
+  30: [78,79,80,81,82,83,84,85,86,87,88,89,90,91,92,93,94,95,96,97,98,99,100,101,102,103,104,105,106,107,108,109,110,111,112,113,114],
+};
+
+let state = {kelas:null, nama:null, surah:null, ayatFrom:1, ayatTo:null, blob:null, detik:0, timer:null, currentJuz:0, currentFeedback:null, nilai:null, feedbackBlob:null, audioContext:null, analyser:null, dataArray:null, animId:null, koreksiOffset:0, koreksiHasMore:true, koreksiLoading:false, riwayatOffset:0, riwayatHasMore:true, riwayatLoading:false, riwayatList:[]};
+
+function showStep(n){
+  document.querySelectorAll('[id^=step]').forEach(el=>el.classList.add('hidden'));
+  document.getElementById('riwayatView').classList.add('hidden');
+  if(n>=1 && n<=5) document.getElementById('step'+n).classList.remove('hidden');
+}
+window.showStep=showStep;
+
+async function loadKelas(){
+  const {data,error} = await supabase.from('students').select('kelas');
+  if(error){ console.error(error); document.getElementById('kelasGrid').innerHTML=`<div class="col-span-3 text-[11px] text-red-500 p-3 bg-red-50 rounded-xl">Error: ${error.message}<br>Jika Invalid API key, cek anon key hardcoded.</div>`; return; }
+  const kelasSet=[...new Set((data||[]).map(d=>d.kelas))].sort();
+  const grid=document.getElementById('kelasGrid');
+  const empty=document.getElementById('kelasEmpty');
+  if(kelasSet.length===0){ grid.innerHTML=''; empty.classList.remove('hidden'); return; }
+  empty.classList.add('hidden');
+  grid.innerHTML=kelasSet.map(k=>`<button onclick="selectKelas('${k}')" class="h-[72px] rounded-[16px] bg-white border font-bold shadow-sm">${k}</button>`).join('');
+}
+window.selectKelas=async(kelas)=>{
+  state.kelas=kelas;
+  document.getElementById('kelasLabel').innerText='Kelas '+kelas;
+  showStep(2);
+  const {data,error} = await supabase.from('students').select('*').eq('kelas',kelas).order('nama');
+  if(error){ alert(error.message); return; }
+  document.getElementById('namaGrid').innerHTML=(data||[]).map(s=>`<button onclick="selectNama('${s.nama.replace(/'/g,"\'")}')" class="h-[64px] rounded-[16px] bg-white border font-semibold flex items-center gap-2 px-4"><div class="w-8 h-8 rounded-full bg-green-100 flex items-center justify-center">${s.nama.charAt(0)}</div>${s.nama}</button>`).join('');
+};
+window.selectNama=(nama)=>{
+  state.nama=nama;
+  localStorage.setItem('current_siswa', JSON.stringify({kelas:state.kelas,nama}));
+  document.getElementById('salamNama').innerText='Hai, '+nama+'!';
+  showStep(3);
+  renderSurahList();
+};
+
+window.filterJuz=(juz)=>{
+  state.currentJuz=juz;
+  document.querySelectorAll('.juzBtn').forEach(b=>{ b.classList.remove('bg-[#16a34a]','text-white'); b.classList.add('bg-white'); if(parseInt(b.dataset.juz)===juz){ b.classList.add('bg-[#16a34a]','text-white'); b.classList.remove('bg-white'); } });
+  renderSurahList();
+};
+
+function renderSurahList(){
+  const q=document.getElementById('searchSurat').value.toLowerCase();
+  let list = SURAH;
+  if(state.currentJuz!==0){ const allowed = JUZ_MAP[state.currentJuz] || []; list = SURAH.filter(s=>allowed.includes(s.no)); }
+  if(q) list = list.filter(s=>s.id.toLowerCase().includes(q) || s.arab.includes(q) || String(s.no).includes(q));
+  document.getElementById('surahCount').innerText=list.length+' surat';
+  document.getElementById('juzInfo').innerText=state.currentJuz===0 ? '114 surat • Juz 1-30' : 'Juz '+state.currentJuz+' • '+list.length+' surat';
+  document.getElementById('surahList').innerHTML=list.map(s=>`<button onclick="selectSurah(${s.no})" class="w-full text-left bg-white rounded-xl border p-3 flex justify-between"><div class="flex gap-3 items-center"><div class="w-8 h-8 rounded-full bg-stone-100 flex items-center justify-center text-[11px] font-bold">${s.no}</div><div><div class="font-bold text-[13px]">${s.id}</div><div class="text-[10px] text-stone-500">${s.ayat} ayat • Juz ${s.juz} • ${s.arab}</div></div></div><div class="text-stone-300">→</div></button>`).join('');
+}
+window.renderSurahList=renderSurahList;
+window.selectSurah=(no)=>{
+  const s=SURAH.find(x=>x.no===no);
+  state.surah=s;
+  document.getElementById('selectedSurahName').innerText=s.id+' ('+s.arab+')';
+  document.getElementById('selectedSurahMeta').innerText=s.ayat+' ayat • Juz '+s.juz;
+  document.getElementById('ayatFrom').value=1; document.getElementById('ayatFrom').max=s.ayat;
+  document.getElementById('ayatTo').value=s.ayat; document.getElementById('ayatTo').max=s.ayat;
+  document.getElementById('ayatRange').classList.remove('hidden');
+};
+window.confirmSurah=async()=>{
+  const from=parseInt(document.getElementById('ayatFrom').value)||1;
+  const to=parseInt(document.getElementById('ayatTo').value)||state.surah.ayat;
+  state.ayatFrom=from; state.ayatTo=to;
+  document.getElementById('surahTitle').innerText=state.surah.id + (from!==1 || to!==state.surah.ayat ? ` ${from}-${to}` : '');
+  document.getElementById('surahJuzLabel').innerText='Juz '+state.surah.juz+' • '+state.surah.ayat+' ayat';
+  const ayatDiv=document.getElementById('surahArabFull');
+  const latinDiv=document.getElementById('surahLatinFull');
+  ayatDiv.innerHTML='<div class="text-[12px] text-stone-400">Memuat ayat lengkap...</div>';
+  const offline={112:["قُلْ هُوَ اللَّهُ أَحَدٌ","اللَّهُ الصَّمَدُ","لَمْ يَلِدْ وَلَمْ يُولَدْ","وَلَمْ يَكُنْ لَهُ كُفُوًا أَحَدٌ"],113:["قُلْ أَعُوذُ بِرَبِّ الْفَلَقِ","مِنْ شَرِّ مَا خَلَقَ","وَمِنْ شَرِّ غَاسِقٍ إِذَا وَقَبَ","وَمِنْ شَرِّ النَّفَّاثَاتِ فِي الْعُقَدِ","وَمِنْ شَرِّ حَاسِدٍ إِذَا حَسَدَ"],114:["قُلْ أَعُوذُ بِرَبِّ النَّاسِ","مَلِكِ النَّاسِ","إِلَٰهِ النَّاسِ","مِنْ شَرِّ الْوَسْوَاسِ الْخَنَّاسِ","الَّذِي يُوَسْوِسُ فِي صُدُورِ النَّاسِ","مِنَ الْجِنَّةِ وَالنَّاسِ"],108:["إِنَّا أَعْطَيْنَاكَ الْكَوْثَرَ","فَصَلِّ لِرَبِّكَ وَانْحَرْ","إِنَّ شَانِئَكَ هُوَ الْأَبْتَرُ"]};
+  if(offline[state.surah.no]){
+    const arr=offline[state.surah.no];
+    const sliced=arr.slice(from-1,to);
+    ayatDiv.innerHTML=sliced.map((a,i)=>`<div class="mb-2"><span class="inline-flex w-6 h-6 rounded-full bg-green-100 text-green-700 text-[10px] items-center justify-center font-bold mr-2">${from+i}</span>${a}</div>`).join('');
+    latinDiv.innerHTML='Ayat '+from+'-'+to;
+  } else {
+    try{ const res=await fetch(`https://api.alquran.cloud/v1/surah/${state.surah.no}/ar.alafasy`); const json=await res.json(); if(json.data && json.data.ayahs){ const ayahs=json.data.ayahs.slice(from-1,to); ayatDiv.innerHTML=ayahs.map(a=>`<div class="mb-3"><span class="inline-flex w-6 h-6 rounded-full bg-green-100 text-green-700 text-[10px] items-center justify-center font-bold mr-2">${a.numberInSurah}</span>${a.text}</div>`).join(''); latinDiv.innerHTML=ayahs.length+' ayat'; } }catch(e){ ayatDiv.innerHTML=`Surat ${state.surah.id} Ayat ${from}-${to}`; }
+  }
+  resetRecord(); showStep(4);
+};
+window.toggleAyat=()=>document.getElementById('ayatContainer').classList.toggle('hidden');
+function resetRecord(){ state.blob=null; state.detik=0; document.getElementById('timer').innerText='00:00'; document.getElementById('previewArea').classList.add('hidden'); document.getElementById('recordHint').innerText='Tap untuk rekam'; const c=document.getElementById('waveCanvas'); const ctx=c.getContext('2d'); ctx.clearRect(0,0,c.width,c.height); ctx.fillStyle='#fafaf9'; ctx.fillRect(0,0,c.width,c.height); }
+let mediaRecorder, audioStream;
+async function startRec(){ try{ audioStream=await navigator.mediaDevices.getUserMedia({audio:true}); state.audioContext=new (window.AudioContext||window.webkitAudioContext)(); const source=state.audioContext.createMediaStreamSource(audioStream); state.analyser=state.audioContext.createAnalyser(); state.analyser.fftSize=256; source.connect(state.analyser); state.dataArray=new Uint8Array(state.analyser.frequencyBinCount); drawWaveform(); mediaRecorder=new MediaRecorder(audioStream); const chunks=[]; mediaRecorder.ondataavailable=e=>chunks.push(e.data); mediaRecorder.onstop=()=>{ const blob=new Blob(chunks,{type:'audio/webm'}); state.blob=blob; document.getElementById('audioPreview').src=URL.createObjectURL(blob); document.getElementById('previewArea').classList.remove('hidden'); stopWaveform(); }; mediaRecorder.start(); state.timer=setInterval(()=>{ state.detik++; const m=String(Math.floor(state.detik/60)).padStart(2,'0'); const s=String(state.detik%60).padStart(2,'0'); document.getElementById('timer').innerText=`${m}:${s}`; },1000); document.getElementById('recordHint').innerText='Merekam... gelombang aktif'; document.getElementById('btnRecord').innerText='⏹️'; }catch(e){ alert(e.message); } }
+function stopRec(){ if(mediaRecorder && mediaRecorder.state!=='inactive') mediaRecorder.stop(); if(audioStream) audioStream.getTracks().forEach(t=>t.stop()); clearInterval(state.timer); document.getElementById('recordHint').innerText='Preview'; document.getElementById('btnRecord').innerText='🎤'; stopWaveform(); }
+function drawWaveform(){ const canvas=document.getElementById('waveCanvas'); const ctx=canvas.getContext('2d'); const w=canvas.width,h=canvas.height; function draw(){ state.animId=requestAnimationFrame(draw); state.analyser.getByteFrequencyData(state.dataArray); ctx.fillStyle='#fafaf9'; ctx.fillRect(0,0,w,h); const bw=(w/state.dataArray.length)*2.5; let x=0; for(let i=0;i<state.dataArray.length;i++){ const bh=state.dataArray[i]/2; ctx.fillStyle='rgb(22,163,74)'; ctx.fillRect(x,(h-bh)/2,bw,bh); x+=bw+1; } } draw(); }
+function stopWaveform(){ if(state.animId) cancelAnimationFrame(state.animId); if(state.audioContext) state.audioContext.close(); }
+document.getElementById('btnRecord').onclick=()=>{ if(mediaRecorder && mediaRecorder.state==='recording') stopRec(); else startRec(); };
+document.getElementById('btnUlangi').onclick=resetRecord;
+document.getElementById('btnKirim').onclick=async()=>{
+  if(!state.blob) return;
+  const btn=document.getElementById('btnKirim'); const status=document.getElementById('uploadStatus');
+  btn.disabled=true; btn.innerText='Mengirim...'; status.classList.remove('hidden'); status.innerText='Upload...';
+  try{ const label=state.surah.id + (state.ayatFrom!==1 || state.ayatTo!==state.surah.ayat ? `_${state.ayatFrom}-${state.ayatTo}` : ''); const fileName=`setoran/${state.kelas}_${state.nama}_${label}_${Date.now()}.webm`.replace(/\s+/g,'_'); const {error:upErr} = await supabase.storage.from(BUCKET).upload(fileName, state.blob, {contentType:'audio/webm'}); if(upErr) throw upErr; const {data:urlData} = supabase.storage.from(BUCKET).getPublicUrl(fileName); const {error:insErr} = await supabase.from('submissions').insert({nama_siswa: state.nama, kelas: state.kelas, surah: label, audio_url: urlData.publicUrl, durasi: state.detik, status: 'baru'}); if(insErr) throw insErr; document.getElementById('successSurah').innerText=label; showStep(5); }catch(e){ status.innerText='Gagal: '+e.message; alert('Gagal kirim: '+e.message); } finally { btn.disabled=false; btn.innerText='Kirim'; }
+};
+async function openRiwayat(reset=true){
+  const curr=JSON.parse(localStorage.getItem('current_siswa')||'{}');
+  if(!curr.nama){ alert('Pilih kelas & nama dulu'); return; }
+  document.querySelectorAll('[id^=step]').forEach(el=>el.classList.add('hidden'));
+  document.getElementById('riwayatView').classList.remove('hidden');
+  const list=document.getElementById('riwayatList');
+  if(reset){ state.riwayatOffset=0; state.riwayatHasMore=true; state.riwayatList=[]; list.innerHTML='<div class="text-[11px] text-stone-500 text-center py-4">Memuat riwayat lengkap...</div>'; setupRiwayatScroll(); }
+  if(state.riwayatLoading || !state.riwayatHasMore) return;
+  state.riwayatLoading=true;
+  const from = state.riwayatOffset;
+  const to = from + 19;
+  const {data,error} = await supabase.from('submissions').select('*').eq('nama_siswa',curr.nama).eq('kelas',curr.kelas).order('created_at',{ascending:false}).range(from,to);
+  if(error){ list.innerHTML='<div class="text-red-500 text-[11px]">'+error.message+'</div>'; state.riwayatLoading=false; return; }
+  if(reset) { list.innerHTML=''; state.riwayatList=[]; }
+  if(!data || data.length===0){
+    state.riwayatHasMore=false;
+    if(reset) list.innerHTML='<div class="bg-white rounded-xl border p-6 text-center"><div class="text-3xl">📭</div><div class="text-[13px] font-bold mt-2">Belum ada setoran</div></div>';
+    else list.insertAdjacentHTML('beforeend','<div class="text-[11px] text-stone-400 text-center py-4">✅ Semua riwayat sudah ditampilkan</div>');
+    state.riwayatLoading=false;
+    return;
+  }
+  state.riwayatList = state.riwayatList.concat(data);
+  const htmlChunk = data.map(d=>{
+    const has=d.feedback_nilai||d.feedback_catatan||d.feedback_audio_url;
+    const badge=d.status==='baru'?'<span class="text-[10px] bg-amber-100 text-amber-700 px-2 py-1 rounded-full font-bold">Menunggu Teachers ⏳</span>':`<span class="text-[10px] bg-green-100 text-green-700 px-2 py-1 rounded-full font-bold">${d.feedback_nilai||d.status}</span>`;
+    let fb=''; if(has){ fb=`<div class="mt-3 p-3 rounded-xl border-2 ${d.feedback_nilai==='mumtaz'?'bg-green-50 border-green-300':'bg-blue-50 border-blue-200'}"><div class="text-[11px] font-bold">✅ FEEDBACK TEACHERS - ${(d.feedback_nilai||'').toUpperCase()}</div>${d.feedback_catatan?`<div class="text-[13px] mt-2 bg-white p-2 rounded-lg">📝 ${d.feedback_catatan}</div>`:''}${d.feedback_audio_url?`<div class="mt-2"><div class="text-[10px] font-bold mb-1">🎧 Voice Feedback:</div><audio controls src="${d.feedback_audio_url}" class="w-full h-[40px] border-2 border-green-300 rounded-lg"></audio></div>`:''}${d.feedback_at?`<div class="text-[10px] text-stone-400 mt-2">Dikoreksi: ${new Date(d.feedback_at).toLocaleString('id-ID')}</div>`:''}</div>`; }
+    return `<div class="bg-white rounded-[16px] border p-4 shadow-sm"><div class="flex justify-between"><div class="font-bold text-[13px]">${d.surah}</div><div class="text-[10px] text-stone-500">${new Date(d.created_at).toLocaleDateString('id-ID')} • ${d.durasi||0} dtk</div></div><div class="mt-2"><audio controls src="${d.audio_url}" class="w-full h-[36px]"></audio></div><div class="mt-2">${badge}</div>${fb}</div>`;
+  }).join('');
+  list.insertAdjacentHTML('beforeend', htmlChunk);
+  state.riwayatOffset += data.length;
+  if(data.length < 20) state.riwayatHasMore=false;
+  state.riwayatLoading=false;
+}
+function setupRiwayatScroll(){
+  const container = document.getElementById('riwayatView');
+  if(!container) return;
+  // Make riwayatView scrollable with unlimited
+  container.classList.add('overflow-y-auto','max-h-[80vh]');
+  container.addEventListener('scroll', ()=>{
+    if(container.scrollTop + container.clientHeight >= container.scrollHeight - 150){
+      openRiwayat(false);
+    }
+  });
+}
+
+window.openRiwayat=openRiwayat;
+window.closeRiwayat=()=>{ document.getElementById('riwayatView').classList.add('hidden'); showStep(3); };
+document.getElementById('btnRiwayat').onclick=openRiwayat;
+
+let tapCount=0, tapTimer;
+document.getElementById('btnTeachers').onclick=()=>{ tapCount++; clearTimeout(tapTimer); tapTimer=setTimeout(()=>tapCount=0,1500); if(tapCount>=3){ document.getElementById('teachersPanel').classList.remove('hidden'); document.getElementById('passwordScreen').classList.remove('hidden'); document.getElementById('teachersContent').classList.add('hidden'); document.getElementById('teacherPass').value=''; document.getElementById('passError').classList.add('hidden'); tapCount=0; } };
+window.closeTeachers=()=>document.getElementById('teachersPanel').classList.add('hidden');
+window.checkPass=()=>{ const p=document.getElementById('teacherPass').value; if(p===TEACHER_PASS){ document.getElementById('passwordScreen').classList.add('hidden'); document.getElementById('teachersContent').classList.remove('hidden'); loadKelasManage(); loadKoreksi(); } else { document.getElementById('passError').classList.remove('hidden'); } };
+window.togglePassVisibility=()=>{ const inp=document.getElementById('teacherPass'); inp.type = inp.type==='password' ? 'text' : 'password'; };
+window.switchTeacherTab=(tab)=>{ document.getElementById('teacherTabKelas').classList.toggle('hidden',tab!=='kelas'); document.getElementById('teacherTabKoreksi').classList.toggle('hidden',tab!=='koreksi'); };
+async function loadKelasManage(){
+  const {data,error} = await supabase.from('students').select('kelas');
+  if(error){ document.getElementById('kelasManageList').innerHTML=`<div class="text-red-500 text-[11px] p-3 bg-red-50 rounded-xl">Error load kelas: ${error.message}<br>Jalankan SQL fix di bawah di Supabase.</div>`; return; }
+  const kelasSet=[...new Set((data||[]).map(d=>d.kelas))].sort();
+  const all=await supabase.from('students').select('*').order('nama');
+  if(all.error){ document.getElementById('kelasManageList').innerHTML=`<div class="text-red-500 text-[11px]">${all.error.message}</div>`; return; }
+  document.getElementById('kelasManageList').innerHTML=kelasSet.map(k=>{ const siswa=(all.data||[]).filter(s=>s.kelas===k); return `<div class="bg-white rounded-xl border p-3"><div class="flex justify-between"><div class="font-bold text-[14px]">Kelas ${k} • ${siswa.length}</div><button onclick="deleteKelas('${k}')" class="text-[11px] text-red-500 font-bold">Hapus</button></div><div class="flex gap-2 mt-2"><input id="inputNama-${k}" placeholder="Nama siswa baru" class="flex-1 h-[36px] rounded-lg border px-3 text-[12px]"><button onclick="addNama('${k}')" class="h-[36px] px-3 rounded-lg bg-stone-900 text-white text-[12px]">Tambah</button></div><div class="mt-2 space-y-1">${siswa.map(s=>`<div class="flex justify-between bg-stone-50 rounded-lg px-3 py-2"><span class="text-[13px]">${s.nama}</span><button onclick="deleteSiswa('${s.id}')" class="text-[11px] text-red-500">Hapus</button></div>`).join('')}</div></div>`; }).join('') || '<div class="text-[12px] bg-white p-4 rounded-xl border">Belum ada kelas. Buat kelas baru di bawah.</div>';
+}
+window.quickAddKelas=async()=>{
+  const k=document.getElementById('inputKelasBaru').value.trim().toUpperCase();
+  const status=document.getElementById('tambahStatus');
+  if(!k){ status.innerText='Isi nama kelas'; return; }
+  const nama=prompt('Nama siswa pertama untuk kelas '+k+'? (wajib)');
+  if(!nama){ status.innerText='Batal'; return; }
+  status.innerText='Menambah...';
+  const {error} = await supabase.from('students').insert({kelas:k,nama:nama.trim()});
+  if(error){ status.innerText='Gagal: '+error.message; alert('Gagal tambah kelas: '+error.message+'\n\nJika RLS, jalankan SQL fix students policy.'); return; }
+  document.getElementById('inputKelasBaru').value=''; status.innerText='Berhasil!';
+  loadKelas(); loadKelasManage();
+};
+window.addNama=async(kelas)=>{
+  const input=document.getElementById(`inputNama-${kelas}`);
+  const nama=input.value.trim();
+  const status=document.getElementById('tambahStatus');
+  if(!nama) return;
+  status.innerText='Menambah '+nama+'...';
+  const {error} = await supabase.from('students').insert({kelas,nama});
+  if(error){ status.innerText='Gagal: '+error.message; alert('Gagal tambah siswa: '+error.message); return; }
+  input.value=''; status.innerText='Siswa '+nama+' ditambah!'; loadKelas(); loadKelasManage();
+};
+window.deleteSiswa=async(id)=>{ if(!confirm('Hapus siswa?')) return; const {error} = await supabase.from('students').delete().eq('id',id); if(error){ alert(error.message); return; } loadKelas(); loadKelasManage(); };
+window.deleteKelas=async(kelas)=>{ if(!confirm('Hapus kelas '+kelas+' dan semua siswanya?')) return; const {error} = await supabase.from('students').delete().eq('kelas',kelas); if(error){ alert(error.message); return; } loadKelas(); loadKelasManage(); };
+async function loadKoreksi(reset=true){
+  const listEl = document.getElementById('koreksiList');
+  if(reset){ state.koreksiOffset=0; state.koreksiHasMore=true; listEl.innerHTML='<div class="text-[11px] text-stone-500 p-3 text-center">Memuat semua setoran...</div>'; }
+  if(state.koreksiLoading || !state.koreksiHasMore) return;
+  state.koreksiLoading=true;
+  const from = state.koreksiOffset;
+  const to = from + 29;
+  const {data, error} = await supabase.from('submissions').select('*').order('created_at',{ascending:false}).range(from,to);
+  if(error){ listEl.innerHTML=`<div class="text-red-500 text-[11px]">${error.message}</div>`; state.koreksiLoading=false; return; }
+  if(reset) listEl.innerHTML='';
+  if(!data || data.length===0){
+    state.koreksiHasMore=false;
+    if(reset) listEl.innerHTML='<div class="text-[12px] bg-white p-4 rounded-xl border">Belum ada setoran</div>';
+    else listEl.insertAdjacentHTML('beforeend','<div class="text-[11px] text-stone-400 text-center py-4">✅ Semua setoran sudah ditampilkan</div>');
+    state.koreksiLoading=false;
+    return;
+  }
+  const htmlChunk = data.map(d=>`<button onclick="openFeedback('${d.id}')" class="w-full text-left bg-white rounded-xl border p-3 hover:border-[#16a34a] transition"><div class="flex justify-between"><div class="font-bold text-[13px]">${d.kelas} • ${d.nama_siswa} • ${d.surah}</div><div class="text-[10px] ${d.status==='baru'?'bg-amber-100 text-amber-700':'bg-green-100 text-green-700'} px-2 py-1 rounded-full font-bold">${d.status}</div></div><div class="text-[11px] text-stone-500 mt-1">${new Date(d.created_at).toLocaleString('id-ID')} • ${d.durasi||0} detik ${d.feedback_nilai?'• Sudah dikoreksi':''}</div></button>`).join('');
+  listEl.insertAdjacentHTML('beforeend', htmlChunk);
+  state.koreksiOffset += data.length;
+  if(data.length < 30) state.koreksiHasMore=false;
+  else { const oldLoader=document.getElementById('koreksiLoader'); if(oldLoader) oldLoader.remove(); listEl.insertAdjacentHTML('beforeend','<div id="koreksiLoader" class="text-[11px] text-stone-400 text-center py-3">Scroll untuk memuat lebih banyak...</div>');
+  state.koreksiLoading=false;
+}
+function setupInfiniteScroll(){
+  const container = document.querySelector('#teachersContent .overflow-y-auto');
+  if(!container) return;
+  container.addEventListener('scroll', ()=>{
+    if(container.scrollTop + container.clientHeight >= container.scrollHeight - 200){
+      // Cek tab aktif
+      const isKoreksi = !document.getElementById('teacherTabKoreksi').classList.contains('hidden');
+      if(isKoreksi) loadKoreksi(false);
+    }
+  });
+}
+
+window.openFeedback=async(id)=>{ const {data} = await supabase.from('submissions').select('*').eq('id',id).single(); state.currentFeedback=data; document.getElementById('feedbackInfo').innerText=data.kelas+' • '+data.nama_siswa+' • '+data.surah; document.getElementById('feedbackAudioPlayer').src=data.audio_url; document.getElementById('inputCatatan').value=data.feedback_catatan||''; state.nilai=data.feedback_nilai||null; document.querySelectorAll('.nilaiBtn').forEach(b=>{ b.classList.remove('bg-[#16a34a]','text-white'); if(b.dataset.nilai===state.nilai) b.classList.add('bg-[#16a34a]','text-white'); }); document.getElementById('feedbackModal').classList.remove('hidden'); };
+window.closeFeedbackModal=()=>document.getElementById('feedbackModal').classList.add('hidden');
+window.setNilai=(n)=>{ state.nilai=n; document.querySelectorAll('.nilaiBtn').forEach(b=>{ b.classList.remove('bg-[#16a34a]','text-white'); if(b.dataset.nilai===n) b.classList.add('bg-[#16a34a]','text-white'); }); };
+let feedbackRec, feedbackChunks;
+document.getElementById('btnRecordFeedback').onclick=async()=>{ const btn=document.getElementById('btnRecordFeedback'); if(feedbackRec && feedbackRec.state==='recording'){ feedbackRec.stop(); feedbackRec.stream.getTracks().forEach(t=>t.stop()); btn.innerText='🎤 Rekam'; return; } const stream=await navigator.mediaDevices.getUserMedia({audio:true}); feedbackRec=new MediaRecorder(stream); feedbackChunks=[]; feedbackRec.ondataavailable=e=>feedbackChunks.push(e.data); feedbackRec.onstop=()=>{ const blob=new Blob(feedbackChunks,{type:'audio/webm'}); state.feedbackBlob=blob; const url=URL.createObjectURL(blob); const aud=document.getElementById('feedbackPreview'); aud.src=url; aud.classList.remove('hidden'); }; feedbackRec.start(); btn.innerText='⏹️ Stop'; };
+document.getElementById('btnKirimFeedback').onclick=async()=>{ if(!state.currentFeedback || !state.nilai){ alert('Pilih nilai'); return; } const btn=document.getElementById('btnKirimFeedback'); btn.disabled=true; btn.innerText='Mengirim...'; try{ let url=state.currentFeedback.feedback_audio_url||null; if(state.feedbackBlob){ const fileName=`feedback/${state.currentFeedback.id}_${Date.now()}.webm`; await supabase.storage.from(BUCKET).upload(fileName, state.feedbackBlob, {contentType:'audio/webm', upsert:true}); const {data} = supabase.storage.from(BUCKET).getPublicUrl(fileName); url=data.publicUrl; } await supabase.from('submissions').update({status:state.nilai, feedback_nilai:state.nilai, feedback_catatan:document.getElementById('inputCatatan').value, feedback_audio_url:url, feedback_at:new Date().toISOString()}).eq('id',state.currentFeedback.id); closeFeedbackModal(); loadKoreksi(); }catch(e){ alert(e.message); } finally { btn.disabled=false; btn.innerText='Kirim Feedback'; } };
+
+loadKelas();
+setTimeout(setupInfiniteScroll,500);
+const juzContainer=document.getElementById('juzChips');
+for(let i=2;i<=28;i++){ const btn=document.createElement('button'); btn.className='juzBtn whitespace-nowrap px-3 h-[32px] rounded-full bg-white border font-bold text-[11px]'; btn.dataset.juz=i; btn.innerText='Juz '+i; btn.onclick=()=>filterJuz(i); juzContainer.appendChild(btn); }
+const saved=JSON.parse(localStorage.getItem('current_siswa')||'null');
+if(saved){ state.kelas=saved.kelas; state.nama=saved.nama; }
+</script>
+</body>
+</html>
