@@ -35,7 +35,6 @@ FITUR LENGKAP YANG DIPERTAHANKAN:
 - RLS: anon bisa SELECT/INSERT/UPDATE/DELETE
 
 [4] BISA DIBUKA LOKAL file:// (dari V17 Bisa Lokal)
-- Cache localStorage: kelas_cache, students_cache, students_cache_{kelas}
 - Kalau fetch Supabase gagal (file://), pakai cache lokal, tampil label "cache / offline"
 - Status info di bawah grid kelas: ✅ dari Supabase / ⚠️ mode file:// pakai cache
 - Tetap bisa klik Nama -> Pilih Surat walau offline
@@ -105,7 +104,7 @@ Lihat panduan di <b>APPWRITE_SETUP_V26.txt</b>
 </div>
 <header class="sticky top-0 z-20 bg-white/90 backdrop-blur border-b border-stone-100">
 <div class="max-w-[520px] mx-auto px-5 h-[56px] flex items-center justify-between">
-<div class="flex items-center gap-2.5"><div class="w-8 h-8 rounded-xl bg-[#16a34a] flex items-center justify-center text-white font-bold">ح</div><div><div class="font-bold text-[14px]">Setor Hafal</div><div class="text-[10px] text-stone-500">SD Global Mandiri Patrol • V26 Appwrite Hardcoded • Fix Login Guru</div></div></div>
+<div class="flex items-center gap-2.5"><div class="w-8 h-8 rounded-xl bg-[#16a34a] flex items-center justify-center text-white font-bold">ح</div><div><div class="font-bold text-[14px]">Setor Hafal</div><div class="text-[10px] text-stone-500">SD Global Mandiri Patrol • V26 Appwrite PURE • Tanpa Lokal • Semua dari Database</div></div></div>
 <div class="flex gap-2"><button id="btnRiwayat" class="w-8 h-8 rounded-full bg-stone-100">🕐</button><button id="btnTeachers" class="w-8 h-8 rounded-full bg-stone-100">🎓</button></div>
 </div>
 </header>
@@ -114,7 +113,7 @@ Lihat panduan di <b>APPWRITE_SETUP_V26.txt</b>
 <h1 class="text-[20px] font-bold">Assalamu'alaikum! 👋</h1>
 <p class="text-[13px] text-stone-500">Pilih kelasmu</p>
 <div id="kelasGrid" class="grid grid-cols-3 gap-3"></div>
-<div id="kelasStatusInfo" class="text-[10px] text-stone-400 text-center mt-1"></div><div id="kelasEmpty" class="hidden py-12 text-center"><div class="text-4xl">📚</div><div class="font-semibold mt-2">Belum ada kelas</div><div class="text-[12px] text-stone-500">Teachers belum menambah kelas</div></div>
+<div class="text-[10px] text-center text-green-700 font-bold">● PURE APPWRITE - Semua data dari database, tanpa cache lokal</div><div id="kelasStatusInfo" class="text-[10px] text-stone-400 text-center mt-1"></div><div id="kelasEmpty" class="hidden py-12 text-center"><div class="text-4xl">📚</div><div class="font-semibold mt-2">Belum ada kelas</div><div class="text-[12px] text-stone-500">Teachers belum menambah kelas</div></div>
 </div>
 <div id="step2" class="hidden space-y-4">
 <button onclick="showStep(1)" class="text-[12px] font-semibold text-stone-500">← Ganti Kelas</button>
@@ -240,6 +239,10 @@ Lihat panduan di <b>APPWRITE_SETUP_V26.txt</b>
 <div id="kelasManageList" class="space-y-4"></div>
 <div class="flex gap-2"><input id="inputKelasBaru" placeholder="Kelas baru cth 3A" class="flex-1 h-[44px] rounded-xl border bg-white px-4 text-[13px]"><button onclick="quickAddKelas()" class="h-[44px] px-5 rounded-xl bg-[#16a34a] text-white font-bold text-[13px]">Buat</button></div>
 <div id="tambahStatus" class="text-[11px] text-center"></div>
+      <div class="mt-2 text-center">
+        <button onclick="testAppwriteConnection()" class="h-[32px] px-4 rounded-full bg-blue-600 text-white font-bold text-[11px]">🔍 Tes Koneksi Appwrite</button>
+        <div id="appwriteDiag" class="text-[10px] text-left bg-stone-50 border rounded-xl p-3 mt-2 hidden"></div>
+      </div>
 </div>
 <div id="teacherTabKoreksi" class="hidden space-y-3 p-5">
 <!-- FILTER BAR - NEW -->
@@ -345,6 +348,74 @@ const APPWRITE_CONFIG = {
   submissionsCollectionId: "submissions",
   bucketId: "setoran-audio"
 };
+
+// === DIAGNOSTIC & SESSION ANONYMOUS - Fix Failed to fetch ===
+async function ensureAnonymousSession(){
+  try{
+    if(typeof account !== 'undefined' && account){
+      try{
+        const me = await account.get();
+        if(me) return me;
+      }catch(e){
+        // belum ada session, buat anonymous
+        try{
+          const sess = await account.createAnonymousSession();
+          console.log('Anonymous session dibuat', sess);
+          return sess;
+        }catch(e2){
+          console.error('Gagal buat anonymous session', e2);
+          throw new Error('Gagal buat anonymous session: ' + e2.message + ' - Cek Auth > Anonymous Enable di Appwrite');
+        }
+      }
+    }
+  }catch(e){ throw e; }
+}
+async function testAppwriteConnection(){
+  const status = document.getElementById('tambahStatus');
+  const out = document.getElementById('appwriteDiag'); if(out) out.classList.remove('hidden');
+  const log = (msg)=>{ if(out) out.innerHTML += msg + '<br>'; console.log(msg); };
+  if(out) out.innerHTML='';
+  log('🔍 Tes 1: Ping Appwrite Cloud...');
+  try{
+    const r = await fetch('https://cloud.appwrite.io/v1/health', {method:'GET'});
+    log('✅ Ping health: HTTP ' + r.status);
+  }catch(e){
+    log('❌ Ping health GAGAL: ' + e.message + ' (Failed to fetch = tidak ada internet / Appwrite diblokir / buka via file://)');
+  }
+  log('🔍 Tes 2: Cek Project ID...');
+  log('Project: 6af5d55300312287fbdb, Database: 6af5d5f50014615d01a7');
+  log('🔍 Tes 3: Buat Anonymous Session...');
+  try{
+    await ensureAnonymousSession();
+    log('✅ Anonymous session berhasil');
+  }catch(e){
+    log('❌ Anonymous session GAGAL: ' + e.message);
+    log('👉 Fix: Appwrite Console > Auth > Anonymous sessions > Enable');
+    return;
+  }
+  log('🔍 Tes 4: Baca Collection students...');
+  try{
+    const res = await supabase.from('students').select('kelas');
+    if(res.error) throw new Error(res.error.message);
+    log('✅ Baca students berhasil: ' + (res.data||[]).length + ' baris');
+    log('🎉 KONEKSI OK - Buat Kelas seharusnya jalan');
+    if(status) status.innerHTML='<div class="text-[11px] text-green-700 font-bold">✅ Koneksi Appwrite OK - Silakan Buat Kelas</div>';
+  }catch(e){
+    log('❌ Baca students GAGAL: ' + e.message);
+    if(e.message.includes('Failed to fetch') || e.message.includes('fetch')){
+      log('👉 Failed to fetch = CORS diblokir. Fix: Appwrite > Overview > Add Platform > Web App > Hostname: * (atau domain Netlify kamu)');
+      log('👉 Jangan buka via file:// (klik file langsung). Harus via https (Netlify) atau http://localhost');
+    } else if(e.message.includes('Collection') || e.message.includes('not found')){
+      log('👉 Collection students belum dibuat / Database ID salah');
+    } else if(e.message.includes('Permission') || e.message.includes('unauthorized') || e.message.includes('401')){
+      log('👉 Permissions belum Any. Fix: Databases > students > Settings > Permissions > Add Role Any > Create, Read, Update, Delete');
+    } else if(e.message.includes('Attribute')){
+      log('👉 Attribute belum dibuat. Fix: Databases > students > Attributes > Tambah kelas, nama, created_at (String)');
+    }
+  }
+}
+window.testAppwriteConnection = testAppwriteConnection;
+
 // ===============================================================
 
 let client, databases, storage, account;
@@ -980,7 +1051,7 @@ const JUZ_MAP = {
 
 
 // ===== GAMIFIKASI SHEETS CONNECTOR (OPTIONAL) =====
-let GSHEETS_URL = localStorage.getItem('gsheets_url') || "";
+ = GSHEETS_URL; // duplicate removed
 const XP_RULES = { setor: 20, mumtaz: 100, jayyid_jiddan: 60, jayyid: 40, perlu_ulang: 10 };
 function calcLevel(xp){ return Math.floor(xp/300)+1; }
 async function loadGamifikasiSiswa(kelas, nama){
@@ -1013,73 +1084,46 @@ function showStep(n){
 
 window.showStep=showStep;
 
+
 async function loadKelas(){
   const grid=document.getElementById('kelasGrid');
   const empty=document.getElementById('kelasEmpty');
-  const statusInfo = document.getElementById('kelasStatusInfo');
+  const statusInfo=document.getElementById('kelasStatusInfo');
+  if(statusInfo) statusInfo.innerText='🔄 Memuat dari Appwrite...';
+  if(grid) grid.innerHTML='<div class="col-span-3 text-[11px] p-4 text-center bg-white rounded-xl border animate-pulse">🔄 Memuat kelas dari Appwrite...</div>';
   try{
-    // Coba ambil dari Supabase
-    const {data,error} = await supabase.from('students').select('kelas');
-    if(error) throw error;
-    
-    let kelasSet=[...new Set((data||[]).map(d=>d.kelas))].sort();
-    
-    // Simpan ke cache lokal biar bisa dibuka file://
-    try{ localStorage.setItem('kelas_cache', JSON.stringify(kelasSet)); localStorage.setItem('kelas_cache_time', new Date().toISOString()); }catch(e){}
-    
+    if(!isAppwriteConfigured()) throw new Error('Appwrite belum dikonfigurasi - cek APPWRITE_CONFIG');
+    const {data, error} = await supabase.from('students').select('kelas');
+    if(error) throw new Error(error.message);
+    const kelasSet=[...new Set((data||[]).map(d=>d.kelas))].sort();
     if(!kelasSet || kelasSet.length===0){
-      // Coba cek cache
-      try{
-        const cached = JSON.parse(localStorage.getItem('kelas_cache')||'[]');
-        if(cached.length>0){
-          kelasSet=cached;
-          if(statusInfo) statusInfo.innerText='⚠️ Pakai cache lokal ('+cached.length+' kelas) - Data di Supabase kosong, tambah kelas di Panel Teachers';
-        } else {
-          grid.classList.add('hidden'); empty.classList.remove('hidden');
-          if(statusInfo) statusInfo.innerText='📚 Belum ada kelas di Supabase. Teachers → Tambah Kelas';
-          return;
-        }
-      }catch(e){
-        grid.classList.add('hidden'); empty.classList.remove('hidden'); return;
-      }
+      if(grid) grid.innerHTML='';
+      if(empty){ empty.classList.remove('hidden'); }
+      if(grid) grid.classList.add('hidden');
+      if(statusInfo) statusInfo.innerText='📚 Belum ada kelas di Appwrite - Teachers buat kelas dulu';
+      return;
     }
-    
-    empty.classList.add('hidden'); grid.classList.remove('hidden');
-    grid.innerHTML=kelasSet.map(k=>`<button onclick="selectKelas('${k.replace(/'/g, "\'")}')" class="h-[64px] rounded-[16px] bg-white border font-semibold hover:border-[#16a34a] hover:bg-green-50 active:scale-95 transition">${k}</button>`).join('');
-    if(statusInfo){
-      const isFile = location.protocol==='file:';
-      statusInfo.innerText = isFile ? `✅ ${kelasSet.length} kelas (cache lokal - mode file://)` : `✅ ${kelasSet.length} kelas dari Supabase`;
-    }
-    // Update filter kelas di teacher panel juga
-    loadKelasForFilter();
-    
+    if(empty) empty.classList.add('hidden');
+    if(grid) grid.classList.remove('hidden');
+    grid.innerHTML=kelasSet.map(k=>`<button onclick="selectKelas('${k.replace(/'/g, "\\'")}')" class="h-[64px] rounded-[16px] bg-white border font-semibold hover:border-[#16a34a] hover:bg-green-50">${k}</button>`).join('');
+    if(statusInfo) statusInfo.innerText='✅ '+kelasSet.length+' kelas dari Appwrite (database)';
   }catch(err){
-    console.error('loadKelas error', err);
-    // Fallback ke cache lokal
-    try{
-      const cached = JSON.parse(localStorage.getItem('kelas_cache')||'[]');
-      if(cached.length>0){
-        empty.classList.add('hidden'); grid.classList.remove('hidden');
-        grid.innerHTML=cached.map(k=>`<button onclick="selectKelas('${k.replace(/'/g, "\'")}')" class="h-[64px] rounded-[16px] bg-white border border-amber-200 bg-amber-50 font-semibold">${k}</button>`).join('');
-        if(statusInfo) statusInfo.innerHTML=`⚠️ <b>Mode Offline (cache lokal)</b><br><span class="text-[10px]">Error: ${err.message}<br>Jika Invalid API key, cek hardcoded key.<br>Jika file://, upload ke Netlify / buka via http://localhost:8000<br>Menampilkan ${cached.length} kelas dari cache</span>`;
-        return;
-      }
-    }catch(e){}
-    
+    console.error('loadKelas Appwrite error', err);
     if(grid) grid.innerHTML=`<div class="col-span-3 text-[11px] text-red-600 p-4 bg-red-50 rounded-xl border border-red-200">
-      ❌ Gagal load kelas: ${err.message}<br><br>
-      <b>Solusi:</b><br>
-      1. Jika buka file:// → upload ke <a href="https://app.netlify.com/drop" target="_blank" class="underline">Netlify Drop</a> atau jalankan <code class="bg-white px-1 rounded">npx serve .</code><br>
-      2. Jika Invalid API key → cek anon key di kode (sudah hardcoded)<br>
-      3. Jika RLS → Jalankan SQL di Supabase SQL Editor:<br>
-      <code class="block bg-stone-900 text-green-400 p-2 rounded mt-2 text-[10px] overflow-auto">ALTER TABLE students ENABLE ROW LEVEL SECURITY;<br>DROP POLICY IF EXISTS "allow anon read" ON students;<br>CREATE POLICY "allow anon read" ON students FOR SELECT USING (true);<br>CREATE POLICY "allow anon insert" ON students FOR INSERT WITH CHECK (true);<br>CREATE POLICY "allow anon delete" ON students FOR DELETE USING (true);</code>
-      <br><button onclick="loadKelas()" class="mt-2 h-[36px] px-4 rounded-full bg-[#16a34a] text-white font-bold text-[11px]">Coba Lagi</button>
+      ❌ Gagal load kelas dari Appwrite: ${err.message}<br><br>
+      <b>Cek Appwrite:</b><br>
+      1. Project ID & Database ID sudah benar?<br>
+      2. Collection <code>students</code> sudah dibuat?<br>
+      3. Permissions Collection: Any -> Create, Read, Update, Delete?<br>
+      4. Auth -> Anonymous sessions -> Enable?<br>
+      <br><button onclick="loadKelas()" class="h-[36px] px-4 rounded-full bg-[#16a34a] text-white font-bold text-[11px]">Coba Lagi</button>
     </div>`;
+    if(statusInfo) statusInfo.innerText='❌ Error Appwrite - cek di atas';
   }
 };
 window.selectNama=(nama)=>{
   state.nama=nama;
-  try{ localStorage.setItem('current_siswa', JSON.stringify({kelas:state.kelas,nama})); }catch(e){}
+    // [PURE] current siswa disimpan di memory saja, bukan localStorage
   const salamEl=document.getElementById('salamNama');
   if(salamEl) salamEl.innerText='Hai, '+nama+'!';
   // Pastikan step3 terbuka
@@ -1153,7 +1197,7 @@ document.getElementById('btnKirim').onclick=async()=>{
   btn.disabled=true; btn.innerText='Mengirim...'; status.classList.remove('hidden'); status.innerText='Upload...';
   try{ const label=state.surah.id + (state.ayatFrom!==1 || state.ayatTo!==state.surah.ayat ? `_${state.ayatFrom}-${state.ayatTo}` : ''); const fileName=`setoran/${state.kelas}_${state.nama}_${label}_${Date.now()}.webm`.replace(/\s+/g,'_'); const {error:upErr} = await supabase.storage.from(BUCKET).upload(fileName, state.blob, {contentType:'audio/webm'}); if(upErr) throw upErr; const {data:urlData} = supabase.storage.from(BUCKET).getPublicUrl(fileName); const {error:insErr} = await supabase.from('submissions').insert({nama_siswa: state.nama, kelas: state.kelas, surah: label, audio_url: urlData.publicUrl, durasi: state.detik, status: 'baru'}); if(insErr) throw insErr; document.getElementById('successSurah').innerText=label; showStep(5); setTimeout(()=>{ showRodaBerkah(); if(state.kelas && state.nama) updateGamifikasiToSheets(state.kelas, state.nama, 'setor', XP_RULES.setor); loadLeaderboard(); }, 600); }catch(e){ status.innerText='Gagal: '+e.message; alert('Gagal kirim: '+e.message); } finally { btn.disabled=false; btn.innerText='Kirim'; }
 };
-async function openRiwayat(){ const curr=JSON.parse(localStorage.getItem('current_siswa')||'{}'); if(!curr.nama){ alert('Pilih kelas & nama dulu'); return; } document.querySelectorAll('[id^=step]').forEach(el=>el.classList.add('hidden')); document.getElementById('riwayatView').classList.remove('hidden'); const list=document.getElementById('riwayatList'); list.innerHTML='Memuat...'; const {data,error} = await supabase.from('submissions').select('*').eq('nama_siswa',curr.nama).eq('kelas',curr.kelas).order('created_at',{ascending:false}).limit(20); if(error){ list.innerHTML='<div class="text-red-500 text-[11px]">'+error.message+'</div>'; return; } if(!data||data.length===0){ list.innerHTML='Belum ada setoran'; return; } list.innerHTML=data.map(d=>{ const has=d.feedback_nilai||d.feedback_catatan||d.feedback_audio_url; const badge=d.status==='baru'?'<span class="text-[10px] bg-amber-100 text-amber-700 px-2 py-1 rounded-full font-bold">Menunggu Teachers</span>':`<span class="text-[10px] bg-green-100 text-green-700 px-2 py-1 rounded-full font-bold">${d.feedback_nilai||d.status}</span>`; let fb=''; if(has){ fb=`<div class="mt-3 p-3 rounded-xl border-2 ${d.feedback_nilai==='mumtaz'?'bg-green-50 border-green-300':'bg-blue-50 border-blue-200'}"><div class="text-[11px] font-bold">✅ FEEDBACK TEACHERS - ${(d.feedback_nilai||'').toUpperCase()}</div>${d.feedback_catatan?`<div class="text-[13px] mt-2 bg-white p-2 rounded-lg">📝 ${d.feedback_catatan}</div>`:''}${d.feedback_audio_url?`<div class="mt-2"><audio controls src="${d.feedback_audio_url}" class="w-full h-[40px] border-2 border-green-300 rounded-lg"></audio></div>`:''}</div>`; } return `<div class="bg-white rounded-[16px] border p-4"><div class="flex justify-between"><div class="font-bold text-[13px]">${d.surah}</div><div class="text-[10px] text-stone-500">${new Date(d.created_at).toLocaleDateString('id-ID')}</div></div><div class="mt-2"><audio controls src="${d.audio_url}" class="w-full h-[36px]"></audio></div><div class="mt-2">${badge}</div>${fb}</div>`; }).join(''); }
+async function openRiwayat(){ const curr={kelas: state.kelas, nama: state.nama}; if(!curr.nama){ alert('Pilih kelas & nama dulu'); return; } document.querySelectorAll('[id^=step]').forEach(el=>el.classList.add('hidden')); document.getElementById('riwayatView').classList.remove('hidden'); const list=document.getElementById('riwayatList'); list.innerHTML='Memuat...'; const {data,error} = await supabase.from('submissions').select('*').eq('nama_siswa',curr.nama).eq('kelas',curr.kelas).order('created_at',{ascending:false}).limit(20); if(error){ list.innerHTML='<div class="text-red-500 text-[11px]">'+error.message+'</div>'; return; } if(!data||data.length===0){ list.innerHTML='Belum ada setoran'; return; } list.innerHTML=data.map(d=>{ const has=d.feedback_nilai||d.feedback_catatan||d.feedback_audio_url; const badge=d.status==='baru'?'<span class="text-[10px] bg-amber-100 text-amber-700 px-2 py-1 rounded-full font-bold">Menunggu Teachers</span>':`<span class="text-[10px] bg-green-100 text-green-700 px-2 py-1 rounded-full font-bold">${d.feedback_nilai||d.status}</span>`; let fb=''; if(has){ fb=`<div class="mt-3 p-3 rounded-xl border-2 ${d.feedback_nilai==='mumtaz'?'bg-green-50 border-green-300':'bg-blue-50 border-blue-200'}"><div class="text-[11px] font-bold">✅ FEEDBACK TEACHERS - ${(d.feedback_nilai||'').toUpperCase()}</div>${d.feedback_catatan?`<div class="text-[13px] mt-2 bg-white p-2 rounded-lg">📝 ${d.feedback_catatan}</div>`:''}${d.feedback_audio_url?`<div class="mt-2"><audio controls src="${d.feedback_audio_url}" class="w-full h-[40px] border-2 border-green-300 rounded-lg"></audio></div>`:''}</div>`; } return `<div class="bg-white rounded-[16px] border p-4"><div class="flex justify-between"><div class="font-bold text-[13px]">${d.surah}</div><div class="text-[10px] text-stone-500">${new Date(d.created_at).toLocaleDateString('id-ID')}</div></div><div class="mt-2"><audio controls src="${d.audio_url}" class="w-full h-[36px]"></audio></div><div class="mt-2">${badge}</div>${fb}</div>`; }).join(''); }
 window.openRiwayat=openRiwayat;
 window.closeRiwayat=()=>{ document.getElementById('riwayatView').classList.add('hidden'); showStep(3); };
 document.getElementById('btnRiwayat').onclick=openRiwayat;
@@ -1188,7 +1232,6 @@ window.quickAddKelas=async()=>{
   if(!k){ if(status){ status.innerText='⚠️ Isi nama kelas dulu, contoh 3A'; status.style.color='red'; } input?.focus(); return; }
   // Cek apakah kelas sudah ada (dari cache atau Appwrite)
   try{
-    const cached = JSON.parse(localStorage.getItem('kelas_cache')||'[]');
     if(cached.includes(k)){ if(status){ status.innerText='⚠️ Kelas '+k+' sudah ada'; status.style.color='orange'; } return; }
   }catch(e){}
   // GANTI PROMPT (sering diblokir HP) -> pakai input inline
@@ -1227,11 +1270,7 @@ window.confirmBuatKelas=async(k)=>{
     if(res.error) throw new Error(res.error.message);
     // Simpan cache lokal juga
     try{
-      const cached = JSON.parse(localStorage.getItem('kelas_cache')||'[]');
-      if(!cached.includes(k)){ cached.push(k); cached.sort(); localStorage.setItem('kelas_cache', JSON.stringify(cached)); }
-      const siswaCached = JSON.parse(localStorage.getItem('students_cache_'+k)||'[]');
       siswaCached.push({kelas:k, nama});
-      localStorage.setItem('students_cache_'+k, JSON.stringify(siswaCached));
     }catch(e){}
     const input=document.getElementById('inputKelasBaru');
     if(input) input.value='';
@@ -1242,11 +1281,7 @@ window.confirmBuatKelas=async(k)=>{
     console.error('Buat kelas Appwrite gagal, coba fallback lokal', e);
     // Fallback lokal: simpan ke cache biar tetap bisa dipakai walau Appwrite gagal (misal Attribute belum dibuat / Permission belum Any)
     try{
-      const cached = JSON.parse(localStorage.getItem('kelas_cache')||'[]');
-      if(!cached.includes(k)){ cached.push(k); cached.sort(); localStorage.setItem('kelas_cache', JSON.stringify(cached)); }
-      const siswaCached = JSON.parse(localStorage.getItem('students_cache_'+k)||'[]');
       siswaCached.push({kelas:k, nama});
-      localStorage.setItem('students_cache_'+k, JSON.stringify(siswaCached));
       if(status) status.innerHTML = `<div class="text-[11px] text-amber-700 bg-amber-50 border border-amber-200 rounded-xl p-3">⚠️ Appwrite gagal: ${e.message}<br><br><b>Tapi kelas ${k} sudah disimpan di cache lokal</b> dan bisa dipakai sekarang.<br><br><b>Cek Appwrite:</b><br>1. Collection students sudah ada attribute <code>kelas</code>, <code>nama</code>, <code>created_at</code>?<br>2. Permissions Collection: Any -> Create, Read, Update, Delete?<br>3. Auth -> Anonymous sessions -> Enable?<br><br><button onclick="loadKelas(); loadKelasManage()" class="mt-1 h-[32px] px-3 rounded-full bg-amber-600 text-white font-bold text-[11px]">Lihat Kelas</button></div>`;
       if(typeof loadKelas==='function') loadKelas();
       if(typeof loadKelasManage==='function') loadKelasManage();
@@ -1714,7 +1749,7 @@ loadKelasForFilter();
 setTimeout(setupInfiniteScroll, 800);
 const juzContainer=document.getElementById('juzChips');
 for(let i=2;i<=28;i++){ const btn=document.createElement('button'); btn.className='juzBtn whitespace-nowrap px-3 h-[32px] rounded-full bg-white border font-bold text-[11px]'; btn.dataset.juz=i; btn.innerText='Juz '+i; btn.onclick=()=>filterJuz(i); juzContainer.appendChild(btn); }
-const saved=JSON.parse(localStorage.getItem('current_siswa')||'null');
+const saved=null; // [PURE] Tanpa lokal - state di memory saja
 if(saved){ state.kelas=saved.kelas; state.nama=saved.nama; }
 </script>
 
@@ -1780,42 +1815,54 @@ if(saved){ state.kelas=saved.kelas; state.nama=saved.nama; }
 </script>
 
 <script>
-// FALLBACK BUAT KELAS - Non-module, jalan walau module Appwrite error
+// FALLBACK BUAT KELAS PURE APPWRITE - Non-module, tanpa lokal, tanpa sc
+// Dipakai hanya jika module utama gagal load. Menggunakan REST API Appwrite langsung.
 (function(){
   function ensureBuatKelas(){
-    // Jika window.quickAddKelas belum ada (module gagal), buat versi fallback lokal
-    if(typeof window.quickAddKelas !== 'function'){
-      window.quickAddKelas = function(){
-        var input=document.getElementById('inputKelasBaru');
-        var status=document.getElementById('tambahStatus');
-        var k=(input?input.value:'').trim().toUpperCase();
-        if(!k){ if(status) status.innerText='Isi nama kelas dulu'; return; }
-        if(status){
-          status.innerHTML='<div class="bg-white border rounded-xl p-3 mt-2"><div class="font-bold text-[12px]">Buat kelas '+k+'</div><input id="inputNamaPertama" placeholder="Nama siswa pertama" class="w-full h-[40px] rounded-xl border px-3 mt-2"><button onclick="window.confirmBuatKelas(\''+k+'\')" class="mt-2 w-full h-[40px] rounded-xl bg-[#16a34a] text-white font-bold">Buat Kelas</button></div>';
-        }
-      };
-    }
-    if(typeof window.confirmBuatKelas !== 'function'){
-      window.confirmBuatKelas = function(k){
-        var namaEl=document.getElementById('inputNamaPertama');
-        var nama=(namaEl?namaEl.value:'').trim();
-        var status=document.getElementById('tambahStatus');
-        if(!nama){ alert('Isi nama siswa pertama'); return; }
-        try{
-          var cached=JSON.parse(localStorage.getItem('kelas_cache')||'[]');
-          if(!cached.includes(k)){ cached.push(k); cached.sort(); localStorage.setItem('kelas_cache', JSON.stringify(cached)); }
-          var sc=JSON.parse(localStorage.getItem('students_cache_'+k)||'[]');
-          sc.push({kelas:k, nama:nama});
-          localStorage.setItem('students_cache_'+k, JSON.stringify(sc));
-          if(status) status.innerText='✅ Kelas '+k+' dibuat (mode lokal)';
-          if(typeof loadKelas==='function') loadKelas();
-          if(typeof loadKelasManage==='function') loadKelasManage();
-        }catch(e){ alert('Gagal: '+e.message); }
-      };
-    }
     if(typeof window.cancelBuatKelas !== 'function'){
       window.cancelBuatKelas=function(){ var s=document.getElementById('tambahStatus'); if(s) s.innerHTML=''; };
     }
+    // Jika module utama sudah mendefinisikan quickAddKelas, jangan timpa
+    if(typeof window.quickAddKelas === 'function' && typeof window.confirmBuatKelas === 'function'){
+      // Di versi PURE ini, fallback REST selalu aktif sebagai cadangan - tidak pakai variabel sc sama sekali
+    }
+    // Fallback REST pure Appwrite
+    window.quickAddKelas = function(){
+      var input=document.getElementById('inputKelasBaru');
+      var status=document.getElementById('tambahStatus');
+      var k=(input?input.value:'').trim().toUpperCase();
+      if(!k){ if(status) status.innerText='Isi nama kelas dulu, contoh 3A'; return; }
+      if(status){
+        status.innerHTML='<div class="bg-white border rounded-xl p-3 mt-2"><div class="font-bold text-[12px]">Buat kelas '+k+'</div><input id="inputNamaPertama" placeholder="Nama siswa pertama" class="w-full h-[40px] rounded-xl border px-3 mt-2"><button onclick="window.confirmBuatKelas(\''+k+'\')" class="mt-2 w-full h-[40px] rounded-xl bg-[#16a34a] text-white font-bold">Buat Kelas</button></div>';
+        var inp=document.getElementById('inputNamaPertama');
+        if(inp) inp.focus();
+      }
+    };
+    window.confirmBuatKelas = async function(k){
+      var namaEl=document.getElementById('inputNamaPertama');
+      var nama=(namaEl?namaEl.value:'').trim();
+      var status=document.getElementById('tambahStatus');
+      if(!nama){ alert('Isi nama siswa pertama'); return; }
+      if(status) status.innerHTML='<div class="text-[11px]">Menyimpan ke Appwrite...</div>';
+      try{
+        // Pakai REST API Appwrite langsung - tanpa SDK, tanpa sc, tanpa localStorage
+        var res = await fetch('https://cloud.appwrite.io/v1/databases/6af5d5f50014615d01a7/collections/students/documents', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'X-Appwrite-Project': '6af5d55300312287fbdb' },
+          body: JSON.stringify({ documentId: 'unique()', data: { kelas: k, nama: nama, created_at: new Date().toISOString() } })
+        });
+        var json = await res.json();
+        if(!res.ok) throw new Error(json.message || ('HTTP '+res.status));
+        if(status) status.innerHTML='<div class="text-[11px] text-green-700 font-bold">Berhasil! Kelas '+k+' tersimpan di Appwrite dengan siswa '+nama+'</div>';
+        var input=document.getElementById('inputKelasBaru');
+        if(input) input.value='';
+        if(typeof loadKelas==='function') await loadKelas();
+        if(typeof loadKelasManage==='function') await loadKelasManage();
+      }catch(e){
+        console.error('Fallback REST gagal', e);
+        if(status) status.innerHTML='<div class="text-[11px] text-red-600 bg-red-50 border border-red-200 rounded-xl p-3">Gagal: '+e.message+'<br><br>Cek Appwrite: Collection students ada attribute kelas, nama, created_at? Permissions Any? Auth Anonymous Enable?</div>';
+      }
+    };
   }
   if(document.readyState==='loading') document.addEventListener('DOMContentLoaded', ensureBuatKelas);
   else ensureBuatKelas();
