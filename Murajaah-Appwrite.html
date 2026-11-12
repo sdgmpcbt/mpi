@@ -248,6 +248,7 @@ Lihat panduan di <b>APPWRITE_SETUP_V26.txt</b>
         </div>
         <div class="text-[10px] text-stone-500">Project kamu dibuat dari Indonesia biasanya di <b>SGP</b>. Kalau error "not accessible in this region", coba FRA lalu NYC.</div>
         <button onclick="autoDetectAppwriteRegion()" class="h-[32px] px-4 rounded-full bg-purple-600 text-white font-bold text-[11px]">✨ Auto-Deteksi Region</button>
+        <button onclick="listAllCollections()" class="h-[32px] px-4 rounded-full bg-orange-600 text-white font-bold text-[11px]">📦 Cek Collections (ID Asli)</button>
         <button onclick="testAppwriteConnection()" class="h-[32px] px-4 rounded-full bg-blue-600 text-white font-bold text-[11px]">🔍 Tes Koneksi Appwrite</button>
         <div id="appwriteDiag" class="text-[10px] text-left bg-stone-50 border rounded-xl p-3 mt-2 hidden"></div>
         <div id="regionInfo" class="text-[10px] text-stone-500">Region aktif: <span id="regionLabel">SGP (Singapore)</span></div>
@@ -421,7 +422,9 @@ async function autoDetectAppwriteRegion(){
         // Ini berarti region SUDAH benar, tapi collection/permission yang salah - berhenti, jangan coba region lain
         log('✅ Region BENAR: ' + region.label + ' (error-nya bukan region, tapi: ' + msg + ')');
         return region;
-      } else if(msg.includes('Failed to fetch')){
+      } else if(msg.includes('Collection with the requested ID') || msg.includes('could not be found') || msg.includes("Collection with")){
+      extra = `<br><br><b>📦 Collection ID Salah!</b><br>Di Appwrite, <b>Nama</b> beda dengan <b>ID</b>. Kode cari ID <code>${window.APPWRITE_CONFIG.studentsCollectionId}</code> tapi tidak ketemu.<br><br><b>Cara cek ID asli:</b> Appwrite Console > Databases > Database kamu > Collections > Klik collection > Settings > lihat <b>Collection ID</b> (bukan Nama).<br>Contoh: Nama = "students" tapi ID = "67f123..."<br><br>Klik tombol <b>📦 Cek Collections</b> di bawah untuk lihat ID asli dan pakai ID yang benar.<br>`;
+    } else if(msg.includes('Failed to fetch')){
         log('❌ Failed to fetch di ' + region.label + ' - cek Web Platform / internet');
         // Lanjut coba region lain
         continue;
@@ -437,6 +440,87 @@ async function autoDetectAppwriteRegion(){
   return null;
 }
 window.autoDetectAppwriteRegion = autoDetectAppwriteRegion;
+
+// ===== AUTO-DETECT COLLECTION ID - Fix "Collection with ID 'students' could not be found" =====
+// Di Appwrite, Nama != ID. Kamu buat collection dengan Nama "students", tapi ID-nya bisa "67abc..." atau "students_collection"
+// Kode butuh ID, bukan Nama. Fungsi ini akan list semua collections di database dan cari yang namanya mirip students/submissions
+async function listAllCollections(){
+  const diag = document.getElementById('appwriteDiag');
+  const log = (msg)=>{ if(diag){ diag.classList.remove('hidden'); diag.innerHTML += msg + '<br>'; } console.log(msg); };
+  if(diag) diag.innerHTML='';
+  log('🔍 List semua collections di database ' + window.APPWRITE_CONFIG.databaseId + '...');
+  try{
+    await ensureAnonymousSession();
+    const res = await databases.listCollections(window.APPWRITE_CONFIG.databaseId);
+    const cols = res.collections || res.documents || [];
+    if(!cols || cols.length===0){
+      log('❌ Database ini TIDAK PUNYA collection sama sekali!');
+      log('👉 Fix: Appwrite Console > Databases > Database kamu > Create Collection > Buat students & submissions');
+      return [];
+    }
+    log('✅ Ditemukan ' + cols.length + ' collections:');
+    cols.forEach(c=>{
+      log('• Nama: <b>' + (c.name||'-') + '</b> | ID: <code>' + c.$id + '</code> | Enabled: ' + c.enabled);
+    });
+    // Auto-detect
+    const findByName = (keywords)=>{
+      for(const kw of keywords){
+        const found = cols.find(c=> (c.name||'').toLowerCase().includes(kw) || (c.$id||'').toLowerCase().includes(kw));
+        if(found) return found;
+      }
+      return null;
+    };
+    const studentsCol = findByName(['student', 'siswa', 'kelas']);
+    const submissionsCol = findByName(['submission', 'setoran', 'hafal', 'koreksi']);
+    if(studentsCol){
+      log('<br>🎯 Students terdeteksi: Nama="' + studentsCol.name + '" ID="' + studentsCol.$id + '"');
+      if(studentsCol.$id !== window.APPWRITE_CONFIG.studentsCollectionId){
+        log('⚠️ Kode pakai ID "' + window.APPWRITE_CONFIG.studentsCollectionId + '" tapi ID asli "' + studentsCol.$id + '" - akan otomatis dipakai ID asli');
+        window.APPWRITE_CONFIG.studentsCollectionId = studentsCol.$id;
+        log('✅ Sudah otomatis diganti ke ID asli');
+      } else {
+        log('✅ ID students sudah benar');
+      }
+    } else {
+      log('❌ Tidak ada collection yang namanya mirip students/siswa/kelas');
+      log('👉 Fix: Buat collection baru dengan ID "students" atau klik salah satu ID di bawah untuk dipakai');
+    }
+    if(submissionsCol){
+      log('🎯 Submissions terdeteksi: Nama="' + submissionsCol.name + '" ID="' + submissionsCol.$id + '"');
+      if(submissionsCol.$id !== window.APPWRITE_CONFIG.submissionsCollectionId){
+        window.APPWRITE_CONFIG.submissionsCollectionId = submissionsCol.$id;
+        log('✅ Sudah otomatis diganti ke ID asli');
+      }
+    }
+    // Tampilkan tombol pilih collection manual
+    let btns = '<br><div class="font-bold">Pilih Collection Manual (klik ID yang benar):</div>';
+    cols.forEach(c=>{
+      btns += '<button onclick="useCollectionId(\'students\', \'' + c.$id + '\')" class="mt-1 mr-1 h-[28px] px-2 rounded-full bg-green-600 text-white text-[10px]">Pakai ' + c.$id + ' sebagai students</button>';
+      btns += '<button onclick="useCollectionId(\'submissions\', \'' + c.$id + '\')" class="mt-1 h-[28px] px-2 rounded-full bg-purple-600 text-white text-[10px]">Pakai ' + c.$id + ' sebagai submissions</button><br>';
+    });
+    if(diag) diag.innerHTML += btns;
+    return cols;
+  }catch(e){
+    log('❌ Gagal list collections: ' + e.message);
+    if(e.message.includes('not found') || e.message.includes('Database')){
+      log('👉 Database ID salah! Cek Appwrite Console > Databases > klik database kamu > lihat Database ID di URL / Settings');
+      log('Database ID di kode: ' + window.APPWRITE_CONFIG.databaseId);
+    }
+    return [];
+  }
+}
+function useCollectionId(type, id){
+  if(type==='students') window.APPWRITE_CONFIG.studentsCollectionId = id;
+  if(type==='submissions') window.APPWRITE_CONFIG.submissionsCollectionId = id;
+  const diag = document.getElementById('appwriteDiag');
+  if(diag) diag.innerHTML += '✅ ' + type + ' sekarang pakai ID: ' + id + '<br>';
+  alert(type + ' sekarang pakai Collection ID: ' + id + '\nSilakan coba Buat Kelas lagi');
+}
+window.listAllCollections = listAllCollections;
+window.useCollectionId = useCollectionId;
+// Auto-detect saat pertama load (tanpa ganggu UI)
+setTimeout(()=>{ listAllCollections().then(()=>{ if(typeof loadKelas==='function') loadKelas(); }).catch(()=>{}); }, 1500);
+
 
 
 // === DIAGNOSTIC & SESSION ANONYMOUS - Fix Failed to fetch ===
@@ -499,6 +583,9 @@ async function testAppwriteConnection(){
       log('👉 REGION SALAH! Project kamu tidak di endpoint ini.');
       log('👉 Klik tombol Auto-Deteksi Region di bawah, atau cek di Appwrite Console: URL-nya sgp / fra / nyc?');
       log('👉 Contoh: https://sgp.cloud.appwrite.io/console/... = region SGP');
+    } else if(e.message.includes('Collection with the requested ID') || e.message.includes('could not be found')){
+      log('👉 COLLECTION ID SALAH! Nama != ID. Klik tombol Cek Collections untuk lihat ID asli');
+      log('👉 Cara cek: Appwrite Console > Databases > Collections > Klik collection > Settings > Collection ID');
     } else if(e.message.includes('Collection') || e.message.includes('not found')){
       log('👉 Collection students belum dibuat / Database ID salah');
     } else if(e.message.includes('Permission') || e.message.includes('unauthorized') || e.message.includes('401')){
