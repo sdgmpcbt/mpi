@@ -354,8 +354,8 @@ window.APPWRITE_CONFIG = {
   endpoint: "https://sgp.cloud.appwrite.io/v1", // FIX REGION: default SGP (Singapore) untuk Indonesia. Jika project kamu di FRA/NYC, ganti via tombol di bawah
   projectId: "6af5d55300312287fbdb",
   databaseId: "6af5d5f50014615d01a7",
-  studentsCollectionId: "students",
-  submissionsCollectionId: "submissions",
+  studentsCollectionId: "6af5d733002dca1193d1",
+  submissionsCollectionId: "6af5d8ec00224701e67d",
   bucketId: "setoran-audio"
 };
 const APPWRITE_CONFIG = window.APPWRITE_CONFIG; // alias agar kode module tetap pakai APPWRITE_CONFIG
@@ -1942,8 +1942,8 @@ if(typeof window.APPWRITE_CONFIG === 'undefined'){
     endpoint: "https://sgp.cloud.appwrite.io/v1",
     projectId: "6af5d55300312287fbdb",
     databaseId: "6af5d5f50014615d01a7",
-    studentsCollectionId: "students",
-    submissionsCollectionId: "submissions",
+    studentsCollectionId: "6af5d733002dca1193d1",
+    submissionsCollectionId: "6af5d8ec00224701e67d",
     bucketId: "setoran-audio"
   };
 }
@@ -2043,7 +2043,7 @@ var APPWRITE_CONFIG = window.APPWRITE_CONFIG; // untuk script non-module
       if(status) status.innerHTML='<div class="text-[11px]">Menyimpan ke Appwrite...</div>';
       try{
         // Pakai REST API Appwrite langsung - tanpa SDK, tanpa sc, tanpa localStorage
-        var res = await fetch((window.APPWRITE_CONFIG ? window.APPWRITE_CONFIG.endpoint : 'https://sgp.cloud.appwrite.io/v1') + '/databases/6af5d5f50014615d01a7/collections/students/documents', {
+        var res = await fetch((window.APPWRITE_CONFIG ? window.APPWRITE_CONFIG.endpoint : 'https://sgp.cloud.appwrite.io/v1') + '/databases/6af5d5f50014615d01a7/collections/6af5d733002dca1193d1/documents', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json', 'X-Appwrite-Project': '6af5d55300312287fbdb' },
           body: JSON.stringify({ documentId: 'unique()', data: { kelas: k, nama: nama, created_at: new Date().toISOString() } })
@@ -2066,7 +2066,88 @@ var APPWRITE_CONFIG = window.APPWRITE_CONFIG; // untuk script non-module
   setTimeout(ensureBuatKelas, 800);
 })();
 </script>
+
+<script>
+// OVERRIDE Cek Collections - Non-module, selalu jalan, tidak butuh API Key
+// Kenapa versi lama tidak terjadi apa-apa: listCollections butuh API Key (admin), anonymous tidak boleh.
+// Jadi versi baru ini TIDAK coba list via API, tapi tampilkan form untuk isi ID manual dari Console.
+(function(){
+  window.listAllCollections = async function(){
+    var diag = document.getElementById('appwriteDiag');
+    if(!diag){
+      alert('Diag element tidak ketemu');
+      return;
+    }
+    diag.classList.remove('hidden');
+    var cfg = window.APPWRITE_CONFIG || { studentsCollectionId: '6af5d733002dca1193d1', submissionsCollectionId: '6af5d8ec00224701e67d', databaseId: '6af5d5f50014615d01a7', endpoint: 'https://sgp.cloud.appwrite.io/v1' };
+    diag.innerHTML = `
+      <div class="font-bold text-[12px] mb-2">📦 Cek Collection ID Asli (Manual - 30 detik)</div>
+      <div class="text-[11px] leading-relaxed">
+        <b>Kenapa tombol ini tidak bisa auto-list?</b><br>
+        Appwrite tidak mengizinkan user anonymous untuk list collections (butuh API Key admin). Jadi harus cek manual di Console.<br><br>
+        <b>Cara cek ID asli:</b><br>
+        1. Buka <a href="https://sgp.cloud.appwrite.io/console" target="_blank" class="text-blue-600 underline">Appwrite Console (SGP)</a><br>
+        2. Project: <b>6af5d55300312287fbdb</b> → Databases → Database <b>6af5d5f50014615d01a7</b><br>
+        3. Klik collection yang namanya "students" → Tab <b>Settings</b> → Lihat <b>Collection ID</b><br>
+        4. Copy ID-nya (bukan Nama-nya) → paste di bawah<br>
+        5. Sama untuk submissions<br><br>
+        <div class="bg-amber-50 border border-amber-200 rounded-lg p-2 text-[10px]">Contoh: Nama = "students" tapi ID bisa "67f123abc..." atau "students_collection". Kalau ID-nya memang "students", berarti bukan itu masalahnya.</div>
+        <div class="mt-3">
+          <label class="font-bold">Collection ID untuk Students (saat ini: <code>${cfg.studentsCollectionId}</code>)</label><br>
+          <input id="inputStudentsColId" value="${cfg.studentsCollectionId}" class="w-full h-[38px] rounded-lg border px-2 mt-1 text-[12px]">
+        </div>
+        <div class="mt-2">
+          <label class="font-bold">Collection ID untuk Submissions (saat ini: <code>${cfg.submissionsCollectionId}</code>)</label><br>
+          <input id="inputSubmissionsColId" value="${cfg.submissionsCollectionId}" class="w-full h-[38px] rounded-lg border px-2 mt-1 text-[12px]">
+        </div>
+        <button onclick="saveCollectionIds()" class="mt-3 w-full h-[40px] rounded-xl bg-[#16a34a] text-white font-bold text-[12px]">💾 Simpan ID & Tes Buat Kelas</button>
+        <div id="saveColStatus" class="text-[10px] mt-2"></div>
+        <div class="mt-3 text-[10px] text-stone-500">
+          <b>Alternatif cepat:</b> Kalau di Console ID-nya ternyata memang "students" dan "submissions" (sudah benar), berarti masalahnya bukan ID, tapi <b>Permissions</b> atau <b>Attributes</b>. Cek:<br>
+          • Collection → Settings → Permissions → Any → Create, Read, Update, Delete (semua centang)<br>
+          • Collection → Attributes → harus ada kelas, nama, created_at (String)<br>
+          • Auth → Anonymous → Enable
+        </div>
+      </div>
+    `;
+    diag.scrollIntoView({behavior:'smooth', block:'nearest'});
+  };
+  window.saveCollectionIds = function(){
+    var sid = document.getElementById('inputStudentsColId');
+    var subid = document.getElementById('inputSubmissionsColId');
+    var status = document.getElementById('saveColStatus');
+    if(!sid || !subid) return;
+    var newStudents = sid.value.trim();
+    var newSubs = subid.value.trim();
+    if(!newStudents || !newSubs){ if(status) status.innerHTML='<span class="text-red-600">Isi kedua ID dulu</span>'; return; }
+    if(window.APPWRITE_CONFIG){
+      window.APPWRITE_CONFIG.studentsCollectionId = newStudents;
+      window.APPWRITE_CONFIG.submissionsCollectionId = newSubs;
+    }
+    if(status) status.innerHTML='<span class="text-green-700 font-bold">✅ Tersimpan! Students ID = '+newStudents+', Submissions ID = '+newSubs+'<br>Silakan coba Buat Kelas lagi.</span>';
+    // Coba load kelas lagi untuk tes
+    try{ if(typeof loadKelas==='function') loadKelas(); }catch(e){}
+    try{ if(typeof loadKelasManage==='function') loadKelasManage(); }catch(e){}
+  };
+  window.useCollectionId = function(type, id){
+    if(type==='students'){
+      var el=document.getElementById('inputStudentsColId');
+      if(el) el.value=id;
+    } else {
+      var el=document.getElementById('inputSubmissionsColId');
+      if(el) el.value=id;
+    }
+    if(window.APPWRITE_CONFIG){
+      if(type==='students') window.APPWRITE_CONFIG.studentsCollectionId=id;
+      else window.APPWRITE_CONFIG.submissionsCollectionId=id;
+    }
+    alert(type+' sekarang pakai ID: '+id);
+  };
+  console.log('Override listAllCollections non-module aktif');
+})();
+</script>
 </body>
+
 
 
 </html>
