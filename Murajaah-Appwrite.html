@@ -1182,28 +1182,81 @@ async function loadKelasManage(){
   document.getElementById('kelasManageList').innerHTML=kelasSet.map(k=>{ const siswa=(all.data||[]).filter(s=>s.kelas===k); return `<div class="bg-white rounded-xl border p-3"><div class="flex justify-between"><div class="font-bold text-[14px]">Kelas ${k} • ${siswa.length}</div><button onclick="deleteKelas('${k}')" class="text-[11px] text-red-500 font-bold">Hapus</button></div><div class="flex gap-2 mt-2"><input id="inputNama-${k}" placeholder="Nama siswa baru" class="flex-1 h-[36px] rounded-lg border px-3 text-[12px]"><button onclick="addNama('${k}')" class="h-[36px] px-3 rounded-lg bg-stone-900 text-white text-[12px]">Tambah</button></div><div class="mt-2 space-y-1">${siswa.map(s=>`<div class="flex justify-between bg-stone-50 rounded-lg px-3 py-2"><span class="text-[13px]">${s.nama}</span><button onclick="deleteSiswa('${s.id}')" class="text-[11px] text-red-500">Hapus</button></div>`).join('')}</div></div>`; }).join('') || '<div class="text-[12px] bg-white p-4 rounded-xl border">Belum ada kelas. Buat kelas baru di bawah.</div>';
 }
 window.quickAddKelas=async()=>{
-  const k=document.getElementById('inputKelasBaru').value.trim().toUpperCase();
+  const input=document.getElementById('inputKelasBaru');
   const status=document.getElementById('tambahStatus');
-  if(!k){ status.innerText='Isi nama kelas'; return; }
-  const nama=prompt('Nama siswa pertama untuk kelas '+k+'? (wajib)');
-  if(!nama){ status.innerText='Batal'; return; }
-  status.innerText='Menambah...';
-  const {error} = await supabase.from('students').insert({kelas:k,nama:nama.trim()});
-  if(error){ status.innerText='Gagal: '+error.message; alert('Gagal tambah kelas: '+error.message+'\n\nJika RLS, jalankan SQL fix students policy.'); return; }
-  document.getElementById('inputKelasBaru').value=''; status.innerText='Berhasil!';
-  loadKelas(); loadKelasManage();
+  const k=(input?input.value:'').trim().toUpperCase();
+  if(!k){ if(status){ status.innerText='⚠️ Isi nama kelas dulu, contoh 3A'; status.style.color='red'; } input?.focus(); return; }
+  // Cek apakah kelas sudah ada (dari cache atau Appwrite)
+  try{
+    const cached = JSON.parse(localStorage.getItem('kelas_cache')||'[]');
+    if(cached.includes(k)){ if(status){ status.innerText='⚠️ Kelas '+k+' sudah ada'; status.style.color='orange'; } return; }
+  }catch(e){}
+  // GANTI PROMPT (sering diblokir HP) -> pakai input inline
+  if(status){
+    status.innerHTML = `
+      <div class="bg-white border rounded-xl p-3 mt-2 text-left">
+        <div class="font-bold text-[12px]">Buat kelas <span class="text-green-700">${k}</span></div>
+        <div class="text-[11px] text-stone-500 mt-1">Isi nama siswa pertama (wajib, biar kelas tidak kosong):</div>
+        <input id="inputNamaPertama" placeholder="Nama siswa pertama, contoh Ahmad" class="w-full h-[40px] rounded-xl border px-3 text-[13px] mt-2">
+        <div class="flex gap-2 mt-2">
+          <button onclick="confirmBuatKelas('${k}')" class="flex-1 h-[40px] rounded-xl bg-[#16a34a] text-white font-bold text-[12px]">✅ Buat Kelas ${k}</button>
+          <button onclick="cancelBuatKelas()" class="h-[40px] px-4 rounded-xl bg-stone-100 font-bold text-[12px]">Batal</button>
+        </div>
+        <div id="buatKelasError" class="text-[10px] text-red-500 mt-2"></div>
+      </div>`;
+    const inp=document.getElementById('inputNamaPertama');
+    if(inp){ inp.focus(); inp.addEventListener('keydown', e=>{ if(e.key==='Enter') window.confirmBuatKelas(k); }); }
+  }
 };
-window.addNama=async(kelas)=>{
-  const input=document.getElementById(`inputNama-${kelas}`);
-  const nama=input.value.trim();
+window.cancelBuatKelas=()=>{
   const status=document.getElementById('tambahStatus');
-  if(!nama) return;
-  status.innerText='Menambah '+nama+'...';
-  const {error} = await supabase.from('students').insert({kelas,nama});
-  if(error){ status.innerText='Gagal: '+error.message; alert('Gagal tambah siswa: '+error.message); return; }
-  input.value=''; status.innerText='Siswa '+nama+' ditambah!'; loadKelas(); loadKelasManage();
+  if(status) status.innerHTML='';
+  const input=document.getElementById('inputKelasBaru');
+  if(input) input.value='';
 };
-window.deleteSiswa=async(id)=>{ if(!confirm('Hapus siswa?')) return; const {error} = await supabase.from('students').delete().eq('id',id); if(error){ alert(error.message); return; } loadKelas(); loadKelasManage(); };
+window.confirmBuatKelas=async(k)=>{
+  const namaEl=document.getElementById('inputNamaPertama');
+  const nama=(namaEl?namaEl.value:'').trim();
+  const status=document.getElementById('tambahStatus');
+  const errEl=document.getElementById('buatKelasError');
+  if(!nama){ if(errEl) errEl.innerText='⚠️ Isi nama siswa pertama dulu'; namaEl?.focus(); return; }
+  if(status) status.innerHTML='<div class="text-[11px] text-stone-500">🔄 Menambah kelas '+k+'...</div>';
+  try{
+    // Coba Appwrite dulu
+    const res = await supabase.from('students').insert({kelas:k, nama:nama});
+    if(res.error) throw new Error(res.error.message);
+    // Simpan cache lokal juga
+    try{
+      const cached = JSON.parse(localStorage.getItem('kelas_cache')||'[]');
+      if(!cached.includes(k)){ cached.push(k); cached.sort(); localStorage.setItem('kelas_cache', JSON.stringify(cached)); }
+      const siswaCached = JSON.parse(localStorage.getItem('students_cache_'+k)||'[]');
+      siswaCached.push({kelas:k, nama});
+      localStorage.setItem('students_cache_'+k, JSON.stringify(siswaCached));
+    }catch(e){}
+    const input=document.getElementById('inputKelasBaru');
+    if(input) input.value='';
+    if(status) status.innerHTML='<div class="text-[11px] text-green-700 font-bold">✅ Berhasil! Kelas '+k+' dibuat dengan siswa '+nama+'</div>';
+    if(typeof loadKelas==='function') loadKelas();
+    if(typeof loadKelasManage==='function') loadKelasManage();
+  }catch(e){
+    console.error('Buat kelas Appwrite gagal, coba fallback lokal', e);
+    // Fallback lokal: simpan ke cache biar tetap bisa dipakai walau Appwrite gagal (misal Attribute belum dibuat / Permission belum Any)
+    try{
+      const cached = JSON.parse(localStorage.getItem('kelas_cache')||'[]');
+      if(!cached.includes(k)){ cached.push(k); cached.sort(); localStorage.setItem('kelas_cache', JSON.stringify(cached)); }
+      const siswaCached = JSON.parse(localStorage.getItem('students_cache_'+k)||'[]');
+      siswaCached.push({kelas:k, nama});
+      localStorage.setItem('students_cache_'+k, JSON.stringify(siswaCached));
+      if(status) status.innerHTML = `<div class="text-[11px] text-amber-700 bg-amber-50 border border-amber-200 rounded-xl p-3">⚠️ Appwrite gagal: ${e.message}<br><br><b>Tapi kelas ${k} sudah disimpan di cache lokal</b> dan bisa dipakai sekarang.<br><br><b>Cek Appwrite:</b><br>1. Collection students sudah ada attribute <code>kelas</code>, <code>nama</code>, <code>created_at</code>?<br>2. Permissions Collection: Any -> Create, Read, Update, Delete?<br>3. Auth -> Anonymous sessions -> Enable?<br><br><button onclick="loadKelas(); loadKelasManage()" class="mt-1 h-[32px] px-3 rounded-full bg-amber-600 text-white font-bold text-[11px]">Lihat Kelas</button></div>`;
+      if(typeof loadKelas==='function') loadKelas();
+      if(typeof loadKelasManage==='function') loadKelasManage();
+      return;
+    }catch(e2){
+      if(status) status.innerText='❌ Gagal: '+e.message;
+    }
+  }
+};
+
 window.deleteKelas=async(kelas)=>{ if(!confirm('Hapus kelas '+kelas+' dan semua siswanya?')) return; const {error} = await supabase.from('students').delete().eq('kelas',kelas); if(error){ alert(error.message); return; } loadKelas(); loadKelasManage(); };
 
 async function loadKelasForFilter(){
@@ -1725,6 +1778,51 @@ if(saved){ state.kelas=saved.kelas; state.nama=saved.nama; }
   setTimeout(ensureTeachersLogin, 1500);
 })();
 </script>
+
+<script>
+// FALLBACK BUAT KELAS - Non-module, jalan walau module Appwrite error
+(function(){
+  function ensureBuatKelas(){
+    // Jika window.quickAddKelas belum ada (module gagal), buat versi fallback lokal
+    if(typeof window.quickAddKelas !== 'function'){
+      window.quickAddKelas = function(){
+        var input=document.getElementById('inputKelasBaru');
+        var status=document.getElementById('tambahStatus');
+        var k=(input?input.value:'').trim().toUpperCase();
+        if(!k){ if(status) status.innerText='Isi nama kelas dulu'; return; }
+        if(status){
+          status.innerHTML='<div class="bg-white border rounded-xl p-3 mt-2"><div class="font-bold text-[12px]">Buat kelas '+k+'</div><input id="inputNamaPertama" placeholder="Nama siswa pertama" class="w-full h-[40px] rounded-xl border px-3 mt-2"><button onclick="window.confirmBuatKelas(\''+k+'\')" class="mt-2 w-full h-[40px] rounded-xl bg-[#16a34a] text-white font-bold">Buat Kelas</button></div>';
+        }
+      };
+    }
+    if(typeof window.confirmBuatKelas !== 'function'){
+      window.confirmBuatKelas = function(k){
+        var namaEl=document.getElementById('inputNamaPertama');
+        var nama=(namaEl?namaEl.value:'').trim();
+        var status=document.getElementById('tambahStatus');
+        if(!nama){ alert('Isi nama siswa pertama'); return; }
+        try{
+          var cached=JSON.parse(localStorage.getItem('kelas_cache')||'[]');
+          if(!cached.includes(k)){ cached.push(k); cached.sort(); localStorage.setItem('kelas_cache', JSON.stringify(cached)); }
+          var sc=JSON.parse(localStorage.getItem('students_cache_'+k)||'[]');
+          sc.push({kelas:k, nama:nama});
+          localStorage.setItem('students_cache_'+k, JSON.stringify(sc));
+          if(status) status.innerText='✅ Kelas '+k+' dibuat (mode lokal)';
+          if(typeof loadKelas==='function') loadKelas();
+          if(typeof loadKelasManage==='function') loadKelasManage();
+        }catch(e){ alert('Gagal: '+e.message); }
+      };
+    }
+    if(typeof window.cancelBuatKelas !== 'function'){
+      window.cancelBuatKelas=function(){ var s=document.getElementById('tambahStatus'); if(s) s.innerHTML=''; };
+    }
+  }
+  if(document.readyState==='loading') document.addEventListener('DOMContentLoaded', ensureBuatKelas);
+  else ensureBuatKelas();
+  setTimeout(ensureBuatKelas, 800);
+})();
+</script>
 </body>
+
 
 </html>
