@@ -239,9 +239,18 @@ Lihat panduan di <b>APPWRITE_SETUP_V26.txt</b>
 <div id="kelasManageList" class="space-y-4"></div>
 <div class="flex gap-2"><input id="inputKelasBaru" placeholder="Kelas baru cth 3A" class="flex-1 h-[44px] rounded-xl border bg-white px-4 text-[13px]"><button onclick="quickAddKelas()" class="h-[44px] px-5 rounded-xl bg-[#16a34a] text-white font-bold text-[13px]">Buat</button></div>
 <div id="tambahStatus" class="text-[11px] text-center"></div>
-      <div class="mt-2 text-center">
+      <div class="mt-2 text-center space-y-2">
+        <div class="text-[11px] font-bold">🌍 Region Appwrite (pilih sesuai project kamu):</div>
+        <div class="flex flex-wrap gap-2 justify-center">
+          <button onclick="switchAppwriteRegion('sgp')" class="h-[32px] px-3 rounded-full bg-green-600 text-white font-bold text-[11px]">🇸🇬 SGP - Indonesia</button>
+          <button onclick="switchAppwriteRegion('fra')" class="h-[32px] px-3 rounded-full bg-stone-700 text-white font-bold text-[11px]">🇩🇪 FRA - Eropa</button>
+          <button onclick="switchAppwriteRegion('nyc')" class="h-[32px] px-3 rounded-full bg-stone-700 text-white font-bold text-[11px]">🇺🇸 NYC - Amerika</button>
+        </div>
+        <div class="text-[10px] text-stone-500">Project kamu dibuat dari Indonesia biasanya di <b>SGP</b>. Kalau error "not accessible in this region", coba FRA lalu NYC.</div>
+        <button onclick="autoDetectAppwriteRegion()" class="h-[32px] px-4 rounded-full bg-purple-600 text-white font-bold text-[11px]">✨ Auto-Deteksi Region</button>
         <button onclick="testAppwriteConnection()" class="h-[32px] px-4 rounded-full bg-blue-600 text-white font-bold text-[11px]">🔍 Tes Koneksi Appwrite</button>
         <div id="appwriteDiag" class="text-[10px] text-left bg-stone-50 border rounded-xl p-3 mt-2 hidden"></div>
+        <div id="regionInfo" class="text-[10px] text-stone-500">Region aktif: <span id="regionLabel">SGP (Singapore)</span></div>
       </div>
 </div>
 <div id="teacherTabKoreksi" class="hidden space-y-3 p-5">
@@ -341,13 +350,92 @@ Lihat panduan di <b>APPWRITE_SETUP_V26.txt</b>
 // 5. Auth -> Settings -> Enable Anonymous sessions
 // 6. Project Settings -> API Keys tidak perlu, pakai Project ID saja
 const APPWRITE_CONFIG = {
-  endpoint: "https://cloud.appwrite.io/v1", // ganti jika self-host: http://localhost/v1
+  endpoint: "https://sgp.cloud.appwrite.io/v1", // FIX REGION: default SGP (Singapore) untuk Indonesia. Jika project kamu di FRA/NYC, ganti via tombol di bawah
   projectId: "6af5d55300312287fbdb",
   databaseId: "6af5d5f50014615d01a7",
   studentsCollectionId: "students",
   submissionsCollectionId: "submissions",
   bucketId: "setoran-audio"
 };
+
+// ===== REGION FIX: Appwrite Cloud punya 3 region, project hanya ada di 1 region =====
+// Error "Project is not accessible in this region" = endpoint salah region.
+// Project dibuat dari Indonesia biasanya di SGP (Singapore).
+const APPWRITE_REGIONS = [
+  { id: 'sgp', label: 'Singapore (SGP) - Untuk Indonesia', endpoint: 'https://sgp.cloud.appwrite.io/v1' },
+  { id: 'fra', label: 'Frankfurt (FRA) - Eropa', endpoint: 'https://fra.cloud.appwrite.io/v1' },
+  { id: 'nyc', label: 'New York (NYC) - Amerika', endpoint: 'https://nyc.cloud.appwrite.io/v1' },
+  { id: 'cloud', label: 'Legacy (cloud.appwrite.io)', endpoint: 'https://cloud.appwrite.io/v1' },
+];
+let currentRegion = 'sgp';
+function getRegionLabel(ep){
+  const r = APPWRITE_REGIONS.find(x=>x.endpoint===ep);
+  return r ? r.label : ep;
+}
+async function switchAppwriteRegion(regionId, silent){
+  const region = APPWRITE_REGIONS.find(r=>r.id===regionId);
+  if(!region) return false;
+  currentRegion = regionId;
+  APPWRITE_CONFIG.endpoint = region.endpoint;
+  // Re-init Appwrite client dengan endpoint baru
+  try{
+    const { Client, Databases, Storage, Account, ID, Query } = window.Appwrite;
+    client = new Client().setEndpoint(region.endpoint).setProject(APPWRITE_CONFIG.projectId);
+    databases = new Databases(client);
+    storage = new Storage(client);
+    account = new Account(client);
+    window._AppwriteLib = { ID, Query };
+    // Reset session, buat baru di region yang benar
+    try{ await account.createAnonymousSession(); }catch(e){}
+    if(!silent){
+      const diag = document.getElementById('appwriteDiag');
+      if(diag){ diag.classList.remove('hidden'); diag.innerHTML += '🔄 Pindah ke region: ' + region.label + '<br>'; }
+    }
+    console.log('Switched to region', region.label);
+    return true;
+  }catch(e){ console.error('switch region gagal', e); return false; }
+}
+window.switchAppwriteRegion = switchAppwriteRegion;
+async function autoDetectAppwriteRegion(){
+  const diag = document.getElementById('appwriteDiag');
+  const log = (msg)=>{ if(diag){ diag.classList.remove('hidden'); diag.innerHTML += msg + '<br>'; } console.log(msg); };
+  log('🔍 Auto-deteksi region project...');
+  log('Mencoba SGP -> FRA -> NYC -> Legacy...');
+  for(const region of APPWRITE_REGIONS){
+    log('Mencoba ' + region.label + '...');
+    await switchAppwriteRegion(region.id, true);
+    try{
+      // Coba baca students, jika error region akan langsung ketahuan
+      const res = await databases.listDocuments(APPWRITE_CONFIG.databaseId, APPWRITE_CONFIG.studentsCollectionId, [window._AppwriteLib.Query.limit(1)]);
+      log('✅ BERHASIL di region: ' + region.label);
+      log('🎉 Pakai region ini! Klik Coba Lagi / Buat Kelas');
+      return region;
+    }catch(e){
+      const msg = e.message || String(e);
+      if(msg.includes('not accessible in this region') || msg.includes('region')){
+        log('❌ Bukan di ' + region.label + ' (Project is not accessible in this region)');
+        continue;
+      } else if(msg.includes('Collection') || msg.includes('not found') || msg.includes('Permission') || msg.includes('Attribute')){
+        // Ini berarti region SUDAH benar, tapi collection/permission yang salah - berhenti, jangan coba region lain
+        log('✅ Region BENAR: ' + region.label + ' (error-nya bukan region, tapi: ' + msg + ')');
+        return region;
+      } else if(msg.includes('Failed to fetch')){
+        log('❌ Failed to fetch di ' + region.label + ' - cek Web Platform / internet');
+        // Lanjut coba region lain
+        continue;
+      } else {
+        log('⚠️ Di ' + region.label + ' error: ' + msg);
+        // Jika error bukan region, anggap region benar
+        log('✅ Region kemungkinan benar: ' + region.label);
+        return region;
+      }
+    }
+  }
+  log('❌ Tidak ada region yang cocok. Cek Project ID & Database ID di Appwrite Console.');
+  return null;
+}
+window.autoDetectAppwriteRegion = autoDetectAppwriteRegion;
+
 
 // === DIAGNOSTIC & SESSION ANONYMOUS - Fix Failed to fetch ===
 async function ensureAnonymousSession(){
@@ -377,7 +465,7 @@ async function testAppwriteConnection(){
   if(out) out.innerHTML='';
   log('🔍 Tes 1: Ping Appwrite Cloud...');
   try{
-    const r = await fetch('https://cloud.appwrite.io/v1/health', {method:'GET'});
+    const r = await fetch(APPWRITE_CONFIG.endpoint + '/health', {method:'GET'});
     log('✅ Ping health: HTTP ' + r.status);
   }catch(e){
     log('❌ Ping health GAGAL: ' + e.message + ' (Failed to fetch = tidak ada internet / Appwrite diblokir / buka via file://)');
@@ -405,6 +493,10 @@ async function testAppwriteConnection(){
     if(e.message.includes('Failed to fetch') || e.message.includes('fetch')){
       log('👉 Failed to fetch = CORS diblokir. Fix: Appwrite > Overview > Add Platform > Web App > Hostname: * (atau domain Netlify kamu)');
       log('👉 Jangan buka via file:// (klik file langsung). Harus via https (Netlify) atau http://localhost');
+    } else if(e.message.includes('not accessible in this region') || e.message.includes('region')){
+      log('👉 REGION SALAH! Project kamu tidak di endpoint ini.');
+      log('👉 Klik tombol Auto-Deteksi Region di bawah, atau cek di Appwrite Console: URL-nya sgp / fra / nyc?');
+      log('👉 Contoh: https://sgp.cloud.appwrite.io/console/... = region SGP');
     } else if(e.message.includes('Collection') || e.message.includes('not found')){
       log('👉 Collection students belum dibuat / Database ID salah');
     } else if(e.message.includes('Permission') || e.message.includes('unauthorized') || e.message.includes('401')){
@@ -1846,7 +1938,7 @@ if(saved){ state.kelas=saved.kelas; state.nama=saved.nama; }
       if(status) status.innerHTML='<div class="text-[11px]">Menyimpan ke Appwrite...</div>';
       try{
         // Pakai REST API Appwrite langsung - tanpa SDK, tanpa sc, tanpa localStorage
-        var res = await fetch('https://cloud.appwrite.io/v1/databases/6af5d5f50014615d01a7/collections/students/documents', {
+        var res = await fetch(APPWRITE_CONFIG.endpoint + '/databases/6af5d5f50014615d01a7/collections/students/documents', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json', 'X-Appwrite-Project': '6af5d55300312287fbdb' },
           body: JSON.stringify({ documentId: 'unique()', data: { kelas: k, nama: nama, created_at: new Date().toISOString() } })
