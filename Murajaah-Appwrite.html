@@ -349,7 +349,7 @@ Lihat panduan di <b>APPWRITE_SETUP_V26.txt</b>
 // 4. Storage -> Create bucket: setoran-audio -> Copy Bucket ID
 // 5. Auth -> Settings -> Enable Anonymous sessions
 // 6. Project Settings -> API Keys tidak perlu, pakai Project ID saja
-const APPWRITE_CONFIG = {
+window.APPWRITE_CONFIG = {
   endpoint: "https://sgp.cloud.appwrite.io/v1", // FIX REGION: default SGP (Singapore) untuk Indonesia. Jika project kamu di FRA/NYC, ganti via tombol di bawah
   projectId: "6af5d55300312287fbdb",
   databaseId: "6af5d5f50014615d01a7",
@@ -357,6 +357,8 @@ const APPWRITE_CONFIG = {
   submissionsCollectionId: "submissions",
   bucketId: "setoran-audio"
 };
+const APPWRITE_CONFIG = window.APPWRITE_CONFIG; // alias agar kode module tetap pakai APPWRITE_CONFIG
+window.APPWRITE_CONFIG = APPWRITE_CONFIG; // pastikan global
 
 // ===== REGION FIX: Appwrite Cloud punya 3 region, project hanya ada di 1 region =====
 // Error "Project is not accessible in this region" = endpoint salah region.
@@ -1845,6 +1847,22 @@ const saved=null; // [PURE] Tanpa lokal - state di memory saja
 if(saved){ state.kelas=saved.kelas; state.nama=saved.nama; }
 </script>
 
+
+<script>
+// GLOBAL CONFIG - agar script non-module bisa akses APPWRITE_CONFIG
+if(typeof window.APPWRITE_CONFIG === 'undefined'){
+  window.APPWRITE_CONFIG = {
+    endpoint: "https://sgp.cloud.appwrite.io/v1",
+    projectId: "6af5d55300312287fbdb",
+    databaseId: "6af5d5f50014615d01a7",
+    studentsCollectionId: "students",
+    submissionsCollectionId: "submissions",
+    bucketId: "setoran-audio"
+  };
+}
+var APPWRITE_CONFIG = window.APPWRITE_CONFIG; // untuk script non-module
+</script>
+
 <!-- FALLBACK LOGIN GURU - Non-module, jalan walau Appwrite gagal -->
 <script>
 (function(){
@@ -1938,7 +1956,7 @@ if(saved){ state.kelas=saved.kelas; state.nama=saved.nama; }
       if(status) status.innerHTML='<div class="text-[11px]">Menyimpan ke Appwrite...</div>';
       try{
         // Pakai REST API Appwrite langsung - tanpa SDK, tanpa sc, tanpa localStorage
-        var res = await fetch(APPWRITE_CONFIG.endpoint + '/databases/6af5d5f50014615d01a7/collections/students/documents', {
+        var res = await fetch((window.APPWRITE_CONFIG ? window.APPWRITE_CONFIG.endpoint : 'https://sgp.cloud.appwrite.io/v1') + '/databases/6af5d5f50014615d01a7/collections/students/documents', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json', 'X-Appwrite-Project': '6af5d55300312287fbdb' },
           body: JSON.stringify({ documentId: 'unique()', data: { kelas: k, nama: nama, created_at: new Date().toISOString() } })
