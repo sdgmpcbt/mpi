@@ -125,6 +125,16 @@
 <div id="kelasManageList" class="space-y-4"></div>
 <div class="flex gap-2"><input id="inputKelasBaru" placeholder="Kelas baru cth 3A" class="flex-1 h-[44px] rounded-xl border bg-white px-4 text-[13px]"><button onclick="quickAddKelas()" class="h-[44px] px-5 rounded-xl bg-[#16a34a] text-white font-bold text-[13px]">Buat</button></div>
 <div id="tambahStatus" class="text-[11px] text-center"></div>
+<div class="bg-white rounded-[16px] border p-4 space-y-3">
+<div class="font-bold text-[13px]">⚙️ Konektor Google Sheets</div>
+<div id="gsheetsStatus" class="text-[11px] text-stone-500">Memuat...</div>
+<input id="gsheetsUrlInput" placeholder="https://script.google.com/macros/s/.../exec" class="w-full h-[44px] rounded-xl border bg-white px-4 text-[12px]">
+<div class="flex gap-2">
+<button onclick="saveGsheetsUrl()" class="flex-1 h-[40px] rounded-xl bg-[#16a34a] text-white font-bold text-[12px]">Simpan URL</button>
+<button onclick="testGsheets()" class="flex-1 h-[40px] rounded-xl bg-stone-900 text-white font-bold text-[12px]">Test</button>
+</div>
+<div class="text-[10px] text-stone-400">Setor +20 XP, Mumtaz +100, Jayyid Jiddan +60, Jayyid +40, Perlu Ulang +10. Otomatis terkirim ke Sheet.</div>
+</div>
 </div>
 <div id="teacherTabKoreksi" class="hidden space-y-3 p-5">
 <!-- FILTER BAR - NEW -->
@@ -347,7 +357,36 @@ const JUZ_MAP = {
 
 
 // ===== GAMIFIKASI SHEETS CONNECTOR (OPTIONAL) =====
-let GSHEETS_URL = localStorage.getItem('gsheets_url') || "";
+let GSHEETS_URL = localStorage.getItem('gsheets_url') || "https://script.google.com/macros/s/AKfycbzp6v97v7rsUIYr112pJkj84D_9dVdD8yY4KwZt8AKFfzx8x8onZtMY8NijriRBGRpC/exec";
+if(!localStorage.getItem('gsheets_url')){ try{ localStorage.setItem('gsheets_url', GSHEETS_URL); }catch(e){} }
+async function sendXPToSheets(kelas, nama_siswa, alasan, xp_dapat){
+  if(!GSHEETS_URL) return;
+  try{ await fetch(GSHEETS_URL, {method:'POST', mode:'no-cors', headers:{'Content-Type':'text/plain;charset=utf-8'}, body: JSON.stringify({kelas, nama_siswa, alasan, xp_dapat})}); }catch(e){ console.warn('GSheets gagal:', e); }
+}
+function initGsheetsUI(){
+  const inp=document.getElementById('gsheetsUrlInput');
+  const st=document.getElementById('gsheetsStatus');
+  if(inp) inp.value=GSHEETS_URL||'';
+  if(st) st.innerText=GSHEETS_URL ? '✅ Aktif - tersambung ke Sheet' : '⚠️ Belum ada URL Sheets';
+}
+window.saveGsheetsUrl=()=>{
+  const inp=document.getElementById('gsheetsUrlInput');
+  const st=document.getElementById('gsheetsStatus');
+  const v=inp ? inp.value.trim() : '';
+  if(!v){ if(st) st.innerText='Isi URL Sheets dulu'; return; }
+  GSHEETS_URL=v;
+  try{ localStorage.setItem('gsheets_url', v); }catch(e){}
+  if(st) st.innerText='✅ Tersimpan!';
+};
+window.testGsheets=async()=>{
+  const st=document.getElementById('gsheetsStatus');
+  if(!GSHEETS_URL){ if(st) st.innerText='Belum ada URL'; return; }
+  if(st) st.innerText='⏳ Mengirim test...';
+  try{
+    await fetch(GSHEETS_URL, {method:'POST', mode:'no-cors', headers:{'Content-Type':'text/plain;charset=utf-8'}, body: JSON.stringify({kelas:'TEST', nama_siswa:'TEST', alasan:'test', xp_dapat:0})});
+    if(st) st.innerText='✅ Terkirim! Cek Sheet - tab XP_Logs harus ada baris TEST. Hapus baris TEST itu di Sheet.';
+  }catch(e){ if(st) st.innerText='❌ Gagal: '+e.message; }
+};
 const XP_RULES = { setor: 20, mumtaz: 100, jayyid_jiddan: 60, jayyid: 40, perlu_ulang: 10 };
 function calcLevel(xp){ return Math.floor(xp/300)+1; }
 async function loadGamifikasiSiswa(kelas, nama){
@@ -478,7 +517,7 @@ document.getElementById('btnKirim').onclick=async()=>{
   if(!state.blob) return;
   const btn=document.getElementById('btnKirim'); const status=document.getElementById('uploadStatus');
   btn.disabled=true; btn.innerText='Mengirim...'; status.classList.remove('hidden'); status.innerText='Upload...';
-  try{ const label=state.surah.id + (state.ayatFrom!==1 || state.ayatTo!==state.surah.ayat ? `_${state.ayatFrom}-${state.ayatTo}` : ''); const fileName=`setoran/${state.kelas}_${state.nama}_${label}_${Date.now()}.webm`.replace(/\s+/g,'_'); const {error:upErr} = await supabase.storage.from(BUCKET).upload(fileName, state.blob, {contentType:'audio/webm'}); if(upErr) throw upErr; const {data:urlData} = supabase.storage.from(BUCKET).getPublicUrl(fileName); const {error:insErr} = await supabase.from('submissions').insert({nama_siswa: state.nama, kelas: state.kelas, surah: label, audio_url: urlData.publicUrl, durasi: state.detik, status: 'baru'}); if(insErr) throw insErr; document.getElementById('successSurah').innerText=label; showStep(5); }catch(e){ status.innerText='Gagal: '+e.message; alert('Gagal kirim: '+e.message); } finally { btn.disabled=false; btn.innerText='Kirim'; }
+  try{ const label=state.surah.id + (state.ayatFrom!==1 || state.ayatTo!==state.surah.ayat ? `_${state.ayatFrom}-${state.ayatTo}` : ''); const fileName=`setoran/${state.kelas}_${state.nama}_${label}_${Date.now()}.webm`.replace(/\s+/g,'_'); const {error:upErr} = await supabase.storage.from(BUCKET).upload(fileName, state.blob, {contentType:'audio/webm'}); if(upErr) throw upErr; const {data:urlData} = supabase.storage.from(BUCKET).getPublicUrl(fileName); const {error:insErr} = await supabase.from('submissions').insert({nama_siswa: state.nama, kelas: state.kelas, surah: label, audio_url: urlData.publicUrl, durasi: state.detik, status: 'baru'}); if(insErr) throw insErr; try{ sendXPToSheets(state.kelas, state.nama, 'setor', XP_RULES.setor); }catch(e){} document.getElementById('successSurah').innerText=label; showStep(5); }catch(e){ status.innerText='Gagal: '+e.message; alert('Gagal kirim: '+e.message); } finally { btn.disabled=false; btn.innerText='Kirim'; }
 };
 async function openRiwayat(){ const curr=JSON.parse(localStorage.getItem('current_siswa')||'{}'); if(!curr.nama){ alert('Pilih kelas & nama dulu'); return; } document.querySelectorAll('[id^=step]').forEach(el=>el.classList.add('hidden')); document.getElementById('riwayatView').classList.remove('hidden'); const list=document.getElementById('riwayatList'); list.innerHTML='Memuat...'; const {data,error} = await supabase.from('submissions').select('*').eq('nama_siswa',curr.nama).eq('kelas',curr.kelas).order('created_at',{ascending:false}).limit(20); if(error){ list.innerHTML='<div class="text-red-500 text-[11px]">'+error.message+'</div>'; return; } if(!data||data.length===0){ list.innerHTML='Belum ada setoran'; return; } list.innerHTML=data.map(d=>{ const has=d.feedback_nilai||d.feedback_catatan||d.feedback_audio_url; const badge=d.status==='baru'?'<span class="text-[10px] bg-amber-100 text-amber-700 px-2 py-1 rounded-full font-bold">Menunggu Teachers</span>':`<span class="text-[10px] bg-green-100 text-green-700 px-2 py-1 rounded-full font-bold">${d.feedback_nilai||d.status}</span>`; let fb=''; if(has){ fb=`<div class="mt-3 p-3 rounded-xl border-2 ${d.feedback_nilai==='mumtaz'?'bg-green-50 border-green-300':'bg-blue-50 border-blue-200'}"><div class="text-[11px] font-bold">✅ FEEDBACK TEACHERS - ${(d.feedback_nilai||'').toUpperCase()}</div>${d.feedback_catatan?`<div class="text-[13px] mt-2 bg-white p-2 rounded-lg">📝 ${d.feedback_catatan}</div>`:''}${d.feedback_audio_url?`<div class="mt-2"><audio controls src="${d.feedback_audio_url}" class="w-full h-[40px] border-2 border-green-300 rounded-lg"></audio></div>`:''}</div>`; } return `<div class="bg-white rounded-[16px] border p-4"><div class="flex justify-between"><div class="font-bold text-[13px]">${d.surah}</div><div class="text-[10px] text-stone-500">${new Date(d.created_at).toLocaleDateString('id-ID')}</div></div><div class="mt-2"><audio controls src="${d.audio_url}" class="w-full h-[36px]"></audio></div><div class="mt-2">${badge}</div>${fb}</div>`; }).join(''); }
 window.openRiwayat=openRiwayat;
@@ -886,6 +925,7 @@ document.getElementById('btnKirimFeedback').onclick=async()=>{
     if(status) status.innerText='⏳ Menyimpan...';
     const {error} = await supabase.from('submissions').update({status:state.nilai, feedback_nilai:state.nilai, feedback_catatan:document.getElementById('inputCatatan').value, feedback_audio_url:url, feedback_at:new Date().toISOString()}).eq('id',state.currentFeedback.id);
     if(error) throw error;
+    try{ const xpFb = XP_RULES[state.nilai]||0; if(xpFb) sendXPToSheets(state.currentFeedback.kelas, state.currentFeedback.nama_siswa, state.nilai, xpFb); }catch(e){}
     if(status) status.innerText='✅ Terkirim! Reset...';
     setTimeout(()=>{
       resetFeedbackForm();
@@ -911,6 +951,7 @@ window.closeFeedbackModal=()=>{
 
 loadKelas();
 loadKelasForFilter();
+try{ initGsheetsUI(); }catch(e){}
 setTimeout(setupInfiniteScroll, 800);
 const juzContainer=document.getElementById('juzChips');
 for(let i=2;i<=28;i++){ const btn=document.createElement('button'); btn.className='juzBtn whitespace-nowrap px-3 h-[32px] rounded-full bg-white border font-bold text-[11px]'; btn.dataset.juz=i; btn.innerText='Juz '+i; btn.onclick=()=>filterJuz(i); juzContainer.appendChild(btn); }
