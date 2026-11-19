@@ -1,0 +1,143 @@
+<!DOCTYPE html><html lang="id"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Analisis Soal - SOP 1-20 + Bloom</title><style>*{box-sizing:border-box}body{margin:0;font-family:system-ui,Arial,sans-serif;background:#F3F5F8;color:#17233A;line-height:1.6}header{background:#1E3A5F;color:#fff;padding:22px 18px}header h1{margin:0;font-size:24px}.wrap{max-width:1080px;margin:auto;padding:18px}.card{background:#fff;border-radius:14px;padding:18px;box-shadow:0 6px 22px rgba(0,0,0,.06);margin-bottom:16px}h2{margin:0 0 10px;font-size:18px}label{font-size:13px;font-weight:700;display:block;margin-bottom:4px}input,select,textarea{width:100%;padding:10px;border:1.5px solid #D9DEE6;border-radius:10px;font-size:14px}textarea{min-height:220px}.grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}@media(max-width:700px){.grid{grid-template-columns:1fr}}.chips{display:flex;gap:8px;flex-wrap:wrap}.chip{border:1.5px solid #D9DEE6;background:#fff;padding:8px 12px;border-radius:999px;cursor:pointer;font-weight:700}.chip.active{background:#1E3A5F;color:#fff}.btn{border:0;padding:12px 16px;border-radius:10px;font-weight:800;cursor:pointer}.btn-p{background:#1E3A5F;color:#fff}.btn-t{background:#0E9F8A;color:#fff}.btn-g{background:#EEF2F7}.row{display:flex;gap:10px;flex-wrap:wrap}table{width:100%;border-collapse:collapse;font-size:13.5px}th,td{padding:8px;border-bottom:1px solid #EDF0F4;text-align:left;vertical-align:top}th{background:#F8FAFC}.badge{display:inline-block;padding:4px 10px;border-radius:999px;font-size:12px;font-weight:700}.ok{background:#D1FAE5;color:#065F46}.warn{background:#FEF3C7;color:#92400E}.bad{background:#FEE2E2;color:#991B1B}.info{background:#DBEAFE;color:#1E40AF}.small{font-size:12.5px;color:#5B6778}.bar{height:12px;background:#E5E7EB;border-radius:999px;overflow:hidden}.bar>div{height:100%;background:#0E9F8A}details{border:1px solid #E5E7EB;border-radius:12px;padding:10px;margin-bottom:8px}summary{font-weight:800;cursor:pointer}.notice{background:#FFFBEB;border:1px solid #FDE68A;padding:10px;border-radius:10px;font-size:13.5px}</style></head><body><header><div class="wrap" style="padding:0"><h1>Analisis Soal &mdash; SOP Poin 1-20 + Taksonomi Bloom</h1><p>Pendamping Guru &bull; KKO dari kalimat pertanyaan (stem) saja, bukan dari pilihan jawaban &bull; Opsi PG huruf kecil a, b, c, d &bull; STS / SAS / SAT / UH</p></div></header><div class="wrap"><div class="card"><h2>1. Identitas Soal</h2><div class="grid"><div><label>Nama Guru</label><input id="guru" placeholder="Contoh: Ibu Ani"></div><div><label>Mata Pelajaran</label><select id="mapel"><option>Bahasa Indonesia</option><option>Matematika</option><option>IPA</option><option>IPS</option><option>PAI</option><option>Bahasa Inggris</option><option>PJOK</option><option>SBdP</option><option>PKn</option></select></div><div><label>Kelas</label><div class="chips" id="kelasChips"></div></div><div><label>Jenis Ujian</label><select id="jenis"><option>STS - Sumatif Tengah Semester</option><option>SAS - Sumatif Akhir Semester</option><option>SAT - Sumatif Akhir Tahun</option><option>UH - Ulangan Harian</option></select></div></div><div style="margin-top:12px"><span id="kelasInfo" class="badge info">Pilih kelas</span> <span id="targetInfo" class="small"></span></div></div><div class="card"><h2>2. Naskah Soal</h2><p class="small">Tempel isi soal. Untuk PG, ketik stem dulu baru opsi. Contoh stem: <b>Bandingkan dua gambar berikut, manakah yang ...</b> lalu <b>a. ... b. ... c. ... d. ...</b></p><div class="row" style="margin-bottom:10px"><button class="btn btn-g" onclick="muatContoh(4)">Muat Contoh Kelas 4</button><button class="btn btn-g" onclick="muatContoh(2)">Muat Contoh Kelas 2</button><button class="btn btn-g" onclick="bersihkan()">Bersihkan</button></div><label>Upload file (opsional)</label><input type="file" id="fileInput" accept=".txt,.doc,.docx,.pdf" style="margin-bottom:10px"><p class="small">File .txt langsung terbaca. File .docx/.pdf silakan tempel teksnya ke kolom bawah.</p><textarea id="teksSoal" placeholder="1. Bandingkan dua gambar berikut, manakah yang menunjukkan ...
+a. menyebutkan ...
+b. menghitung ...
+c. ...
+d. ...
+
+2. Jelaskan ..."></textarea><div class="grid" style="margin-top:12px"><div><label>Jumlah PG</label><input type="number" id="jPG" value="0"></div><div><label>Jumlah Isian Singkat</label><input type="number" id="jIsian" value="0"></div><div><label>Jumlah Uraian</label><input type="number" id="jUraian" value="0"></div><div><label>Jumlah Soal Bergambar</label><input type="number" id="jGambar" value="0"></div><div><label>Mudah</label><input type="number" id="jMudah" value="0"></div><div><label>Sedang</label><input type="number" id="jSedang" value="0"></div><div><label>Sulit</label><input type="number" id="jSulit" value="0"></div><div><label>Soal dengan Teks Cerita</label><input type="number" id="jCerita" value="0"></div></div><div class="row" style="margin-top:12px"><button class="btn btn-t" onclick="hitungOtomatis()">Hitung Otomatis dari Teks</button><span class="small" id="hitungInfo"></span></div><h3>Distribusi Taksonomi Bloom (C1-C6)</h3><p class="small">KKO dicari <b>hanya di stem</b>. Kata KKO di dalam opsi a-d tidak dihitung.</p><div class="grid"><div><label>C1 Mengingat</label><input type="number" id="c1" value="0"></div><div><label>C2 Memahami</label><input type="number" id="c2" value="0"></div><div><label>C3 Mengaplikasikan</label><input type="number" id="c3" value="0"></div><div><label>C4 Menganalisis</label><input type="number" id="c4" value="0"></div><div><label>C5 Mengevaluasi</label><input type="number" id="c5" value="0"></div><div><label>C6 Mencipta</label><input type="number" id="c6" value="0"></div></div><h3>Checklist Format (SOP 4-9, 14-20)</h3><div id="checklist" class="grid"></div></div><div class="card"><button class="btn btn-p" style="width:100%;font-size:16px;padding:14px" onclick="analisis()">Analisis Soal Sekarang</button><p class="small" style="text-align:center">Semua analisis berjalan di browser, tidak perlu internet setelah file dibuka.</p></div><div id="hasil"></div><div class="card"><h2>Panduan SOP Poin 1-20</h2><details open><summary>Jumlah, Bobot &amp; Format Dasar</summary><p><b>1.</b> Kelas atas (4,5,6): 15 PG, 10 isian, 5 uraian, kesulitan berbeda.<br><b>2.</b> Kelas bawah (1,2,3): 10 PG, 5 isian, 3 uraian, kesulitan berbeda.<br><b>3.</b> Bobot: PG 1, Isian 2, Uraian 5. Total atas 60, bawah 35.<br><b>4.</b> Font Times New Roman semua kelas.<br><b>5.</b> Kelas atas: 12 bacaan, 14/16 KOP/judul.<br><b>6.</b> Kelas bawah: 14 bacaan, 16 KOP/judul.<br><b>7.</b> Tulisan Arab 14.<br><b>8.</b> Spasi 1,5.<br><b>9.</b> Istilah Inggris di soal Indonesia ditulis Italic (kecuali soal Bahasa Inggris).</p></details><details><summary>Gambar, Opsi &amp; Pengetikan</summary><p><b>10.</b> Kelas atas 25% soal bergambar (sekitar 8 dari 30).<br><b>11.</b> Kelas bawah 50% bergambar (sekitar 9 dari 18).<br><b>12.</b> Kelas atas PG 4 pilihan.<br><b>13.</b> Kelas bawah PG 3 pilihan.<br><b>14.</b> Rapi + pakai Numbering.<br><b>15.</b> Titik tengah 3 titik (...), titik akhir 4 titik (....).<br><b>16.</b> Opsi PG huruf kecil <b>a, b, c, d</b> - bukan A, B, C, D.<br><b>17.</b> Kata setelah a, b, c, d ikut kaidah: nama pakai kapital, kata biasa kecil. Contoh: <i>a. Jakarta</i> benar, <i>a. berlari</i> benar, <i>a. Berlari</i> salah jika bukan nama.<br><b>18.</b> Gambar/teks dipakai di soal lain - cantumkan lagi.<br><b>19.</b> Gambar di kiri atau di atas soal.<br><b>20.</b> Teks cerita diberi tabel.</p></details><details><summary>Panduan Taksonomi Bloom + KKO</summary><p><b>C1 Mengingat:</b> menyebutkan, mengingat, menghafal, mengenali, menunjukkan, menuliskan, mengulang, memilih, menyatakan, mengidentifikasi.<br><b>C2 Memahami:</b> menjelaskan, menguraikan, memberi contoh, menyimpulkan, merangkum, mengartikan, membedakan, mengklasifikasikan.<br><b>C3 Mengaplikasikan:</b> menerapkan, menggunakan, menghitung, menyelesaikan, mempraktikkan, mendemonstrasikan.<br><b>C4 Menganalisis:</b> menganalisis, membandingkan, mengaitkan, mengategorikan, menemukan pola, memeriksa.<br><b>C5 Mengevaluasi:</b> menilai, mengevaluasi, mengkritik, memutuskan, memberi alasan, mempertimbangkan, membuktikan.<br><b>C6 Mencipta:</b> membuat, menciptakan, merancang, menyusun, mengembangkan, mengarang, merencanakan.<br><br><b>Penting:</b> KKO diambil dari kalimat pertanyaan (stem) saja. Jika KKO hanya ada di opsi jawaban, level Bloom tidak berubah.</p></details></div><div class="card"><h2>Riwayat (tersimpan di perangkat ini)</h2><div id="riwayat"></div><button class="btn btn-g" onclick="hapusRiwayat()">Hapus Riwayat</button></div></div><script>
+let kelasTerpilih=4;
+const kkoMap={C1:["menyebutkan","mengingat","menghafal","mengenali","menunjukkan","menuliskan","mengulang","memilih","menyatakan","mengidentifikasi","sebutkan"],C2:["menjelaskan","menguraikan","memberi contoh","menyimpulkan","merangkum","mengartikan","membedakan","mengklasifikasikan","mendeskripsikan","jelaskan","uraikan"],C3:["menerapkan","menggunakan","menghitung","menyelesaikan","mempraktikkan","mendemonstrasikan","melaksanakan","memecahkan","hitunglah","terapkan","gunakan"],C4:["menganalisis","membandingkan","mengaitkan","mengategorikan","menemukan pola","memeriksa","bandingkan","analisis"],C5:["menilai","mengevaluasi","mengkritik","memutuskan","memberi alasan","mempertimbangkan","membuktikan","nilai","evaluasi"],C6:["membuat","menciptakan","merancang","menyusun","mengembangkan","mengarang","merencanakan","memproduksi","buatlah","rancanglah"]};
+const checklistItems=[["Font Times New Roman","font"],["Ukuran font bacaan sesuai kelas","ukuranBacaan"],["Ukuran font KOP/judul sesuai kelas","ukuranKop"],["Tulisan Arab 14 (jika ada)","arab"],["Spasi 1,5","spasi"],["Istilah asing Italic","italic"],["Penomoran pakai Numbering & rapi","numbering"],["Titik tengah 3 & akhir 4","titik"],["Opsi PG huruf kecil a, b, c, d","opsiKecil"],["Kapitalisasi kata setelah opsi benar","kapital"],["Gambar/teks diulang jika dipakai lagi","ulang"],["Posisi gambar kiri/atas","posisiGambar"],["Teks cerita diberi tabel","tabelCerita"]];
+function init(){
+  const wrap=document.getElementById('kelasChips');
+  for(let k=1;k<=6;k++){const b=document.createElement('button');b.className='chip'+(k===4?' active':'');b.textContent='Kelas '+k;b.onclick=()=>{kelasTerpilih=k;document.querySelectorAll('.chip').forEach(c=>c.classList.remove('active'));b.classList.add('active');updateKelasInfo();};wrap.appendChild(b);}
+  const cl=document.getElementById('checklist');
+  checklistItems.forEach(([label,id])=>{const d=document.createElement('div');d.innerHTML='<label>'+label+'</label><select id="chk_'+id+'"><option value="Belum Dicek">Belum Dicek</option><option value="Ya">Ya</option><option value="Tidak">Tidak</option></select>';cl.appendChild(d);});
+  updateKelasInfo(); tampilRiwayat();
+  document.getElementById('fileInput').addEventListener('change',e=>{const file=e.target.files[0];if(!file)return;if(file.name.endsWith('.txt')){const r=new FileReader();r.onload=()=>{document.getElementById('teksSoal').value=r.result;hitungOtomatis();};r.readAsText(file);}else{alert('File '+file.name+' tersimpan. Untuk .docx/.pdf silakan tempel isi soal ke kolom teks agar bisa dianalisis.');}});
+}
+function updateKelasInfo(){
+  const atas=kelasTerpilih>=4;
+  document.getElementById('kelasInfo').textContent=atas?'Kelas Atas (4, 5, 6)':'Kelas Bawah (1, 2, 3)';
+  document.getElementById('targetInfo').textContent=atas?'Target: 15 PG, 10 isian, 5 uraian | Total nilai maks 60 | Gambar 25% (sekitar 8 soal) | PG 4 pilihan':'Target: 10 PG, 5 isian, 3 uraian | Total nilai maks 35 | Gambar 50% (sekitar 9 soal) | PG 3 pilihan';
+}
+function bersihkan(){document.getElementById('teksSoal').value='';}
+function muatContoh(k){
+  if(k===4){kelasTerpilih=4;document.querySelectorAll('.chip').forEach((c,i)=>{c.classList.toggle('active',i===3);});updateKelasInfo();
+  document.getElementById('teksSoal').value='1. Bandingkan dua gambar berikut, manakah yang menunjukkan kegiatan gotong royong?\na. menyebutkan nama teman\nb. menghitung jumlah buku\nc. bekerja sama membersihkan kelas\nd. bermain sendiri\n\n2. Jelaskan mengapa kita harus menghemat air!\n\n3. Sebutkan tiga contoh kegiatan yang mencerminkan Pancasila! ....\n\n4. Hitunglah 125 + 275 = ....\n\n5. Buatlah sebuah kalimat ajakan untuk menjaga kebersihan sekolah! ....';}
+  else{kelasTerpilih=2;document.querySelectorAll('.chip').forEach((c,i)=>{c.classList.toggle('active',i===1);});updateKelasInfo();
+  document.getElementById('teksSoal').value='1. Perhatikan gambar berikut, hewan apakah yang suka makan wortel?\na. kucing\nb. kelinci\nc. ayam\n\n2. Sebutkan warna bendera Indonesia! ....\n\n3. Jelaskan mengapa kita harus mencuci tangan sebelum makan!';}
+  hitungOtomatis();
+}
+function parseSoal(){
+  const teks=document.getElementById('teksSoal').value||'';
+  const lines=teks.split(/\n/);
+  let items=[]; let cur=null;
+  lines.forEach(line=>{
+    const m=line.match(/^\s*(\d+)[\.\)]\s*(.*)$/);
+    if(m){ if(cur) items.push(cur); cur={no:parseInt(m[1]), text:m[2], full:m[2]}; }
+    else if(cur){ cur.full+='\n'+line; }
+  });
+  if(cur) items.push(cur);
+  items.forEach(it=>{
+    const full=it.full;
+    let idx=-1; const mm=full.search(/\n\s*a[\.\)]\s/);
+    if(mm>=0) idx=mm;
+    else { const mm2=full.search(/\s+a[\.\)]\s/); if(mm2>=0 && full.slice(mm2).length>10) idx=mm2; }
+    if(idx>=0){ it.stem=full.slice(0,idx).trim(); it.opsi=full.slice(idx).trim(); }
+    else { it.stem=full.trim(); it.opsi=''; }
+    const opsiCount=(it.opsi.match(/\b[abcd][\.\)]\s/g)||[]).length;
+    it.opsiCount=opsiCount;
+    const stemLow=it.stem.toLowerCase();
+    let jenis='Uraian';
+    if(opsiCount>=2) jenis='PG';
+    else if(stemLow.includes('....')||stemLow.includes('___')||stemLow.includes('isilah')||stemLow.includes('lengkapi')) jenis='Isian';
+    else if(/jelaskan|uraikan|mengapa|bagaimana|sebutkan|buatlah|hitunglah|bandingkan|tuliskan/.test(stemLow)) jenis=/jelaskan|uraikan|mengapa|bagaimana|sebutkan|buatlah/.test(stemLow)?'Uraian':'Isian';
+    it.jenis=jenis;
+    // KKO HANYA dari stem
+    let best=null, bestPos=1e9, bestKata='';
+    Object.keys(kkoMap).forEach(lvl=>{kkoMap[lvl].forEach(k=>{const p=stemLow.indexOf(k); if(p>=0 && p<bestPos){bestPos=p; best=lvl; bestKata=k;}});});
+    it.bloom=best; it.kko=bestKata;
+  });
+  return items;
+}
+function hitungOtomatis(){
+  const items=parseSoal();
+  const pg=items.filter(x=>x.jenis==='PG').length;
+  const isian=items.filter(x=>x.jenis==='Isian').length;
+  const uraian=items.filter(x=>x.jenis==='Uraian').length;
+  document.getElementById('jPG').value=pg; document.getElementById('jIsian').value=isian; document.getElementById('jUraian').value=uraian;
+  const teks=(document.getElementById('teksSoal').value||'').toLowerCase();
+  const gambar=(teks.match(/gambar|perhatikan gambar|lihat gambar/g)||[]).length;
+  document.getElementById('jGambar').value=Math.min(gambar, items.length||gambar);
+  const counts={C1:0,C2:0,C3:0,C4:0,C5:0,C6:0};
+  items.forEach(it=>{if(it.bloom) counts[it.bloom]++;});
+  document.getElementById('c1').value=counts.C1; document.getElementById('c2').value=counts.C2; document.getElementById('c3').value=counts.C3; document.getElementById('c4').value=counts.C4; document.getElementById('c5').value=counts.C5; document.getElementById('c6').value=counts.C6;
+  document.getElementById('hitungInfo').textContent='Terdeteksi '+items.length+' soal: '+pg+' PG, '+isian+' isian, '+uraian+' uraian. KKO dihitung hanya dari stem.';
+}
+function getChk(id){return document.getElementById('chk_'+id).value;}
+function statusBadge(s){if(s==='Lulus')return '<span class="badge ok">Lulus</span>';if(s==='Perlu Perbaikan')return '<span class="badge warn">Perlu Perbaikan</span>';return '<span class="badge bad">Tidak Sesuai</span>';}
+function chkStatus(v){if(v==='Ya')return 'Lulus';if(v==='Tidak')return 'Tidak Sesuai';return 'Perlu Perbaikan';}
+function analisis(){
+  hitungOtomatis();
+  const atas=kelasTerpilih>=4;
+  const tPG=atas?15:10, tIsian=atas?5:5, tUraian=atas?5:3;
+  // kelas bawah isian 5, atas 10 -> koreksi
+  const targetIsian=atas?10:5;
+  const jPG=+document.getElementById('jPG').value||0, jIsian=+document.getElementById('jIsian').value||0, jUraian=+document.getElementById('jUraian').value||0;
+  const total=jPG+jIsian+jUraian; const totalTarget=atas?30:18;
+  const nilai=jPG*1+jIsian*2+jUraian*5; const nilaiMax=atas?60:35;
+  const jGambar=+document.getElementById('jGambar').value||0; const persen=total?Math.round(jGambar/total*100):0; const targetPersen=atas?25:50; const targetGambar=atas?8:9;
+  const teks=document.getElementById('teksSoal').value||'';
+  const items=parseSoal();
+  const hasUpperOpt=/\n\s*A[\.\)]\s/.test(teks)||/^A[\.\)]\s/.test(teks);
+  const hasLowerOpt=/\n\s*a[\.\)]\s/.test(teks)||/a\.\s/.test(teks);
+  const avgOpsi=items.filter(x=>x.jenis==='PG').length?Math.round(items.filter(x=>x.jenis==='PG').reduce((s,x)=>s+x.opsiCount,0)/Math.max(1,items.filter(x=>x.jenis==='PG').length)):0;
+  const cVals=[+document.getElementById('c1').value||0,+document.getElementById('c2').value||0,+document.getElementById('c3').value||0,+document.getElementById('c4').value||0,+document.getElementById('c5').value||0,+document.getElementById('c6').value||0];
+  const totalBloom=cVals.reduce((a,b)=>a+b,0)||1; const lots=cVals[0]+cVals[1]+cVals[2]; const hots=cVals[3]+cVals[4]+cVals[5];
+  let rows=[];
+  function add(no,poin,target,hasil,status,saran){rows.push({no,poin,target,hasil,status,saran});}
+  add(1,'Jumlah soal kelas atas','15 PG, 10 isian, 5 uraian',atas?(jPG+' PG, '+jIsian+' isian, '+jUraian+' uraian'):'Tidak berlaku (kelas bawah)',atas?((jPG===15&&jIsian===10&&jUraian===5)?'Lulus':(Math.abs(jPG-15)+Math.abs(jIsian-10)+Math.abs(jUraian-5)<=2?'Perlu Perbaikan':'Tidak Sesuai')):'Lulus',atas?('Selisih PG '+(jPG-15)+', isian '+(jIsian-10)+', uraian '+(jUraian-5)+'. Sesuaikan agar pas 15/10/5.'):'Kelas bawah memakai poin 2.');
+  add(2,'Jumlah soal kelas bawah','10 PG, 5 isian, 3 uraian',!atas?(jPG+' PG, '+jIsian+' isian, '+jUraian+' uraian'):'Tidak berlaku (kelas atas)',!atas?((jPG===10&&jIsian===5&&jUraian===3)?'Lulus':(Math.abs(jPG-10)+Math.abs(jIsian-5)+Math.abs(jUraian-3)<=2?'Perlu Perbaikan':'Tidak Sesuai')):'Lulus',!atas?('Selisih PG '+(jPG-10)+', isian '+(jIsian-5)+', uraian '+(jUraian-3)+'. Sesuaikan agar pas 10/5/3.'):'Kelas atas memakai poin 1.');
+  add(3,'Bobot nilai','PG 1, Isian 2, Uraian 5. Maks '+(atas?60:35),'Total nilai maks: '+nilai+' dari '+total+' soal',(nilai===(atas?60:35)?'Lulus':'Perlu Perbaikan'),'Cek hitungan: PG x1 + Isian x2 + Uraian x5. Saat ini '+nilai+'.');
+  const fmt=[['4','Font Times New Roman','Times New Roman',getChk('font')],['5','Font size kelas atas','12 bacaan, 14/16 KOP',getChk('ukuranBacaan')],['6','Font size kelas bawah','14 bacaan, 16 KOP',getChk('ukuranKop')],['7','Font tulisan Arab','14',getChk('arab')],['8','Spasi','1,5',getChk('spasi')],['9','Istilah asing Italic','Italic untuk istilah Inggris di soal Indonesia',getChk('italic')]];
+  fmt.forEach(r=>{add(r[0],r[1],r[2],r[3]==='Ya'?'Sudah sesuai':r[3]==='Tidak'?'Belum sesuai':'Belum dicek',chkStatus(r[3]),r[3]==='Ya'?'Pertahankan.':r[3]==='Tidak'?'Perbaiki sesuai target SOP.':'Cek dan isi Ya/Tidak pada checklist.');});
+  add(10,'Soal bergambar kelas atas','25% (sekitar 8 dari 30)',atas?(jGambar+' soal ('+persen+'%)'):'Tidak berlaku',atas?((persen>=20&&persen<=30)?'Lulus':(Math.abs(persen-25)<=10?'Perlu Perbaikan':'Tidak Sesuai')):'Lulus',atas?('Tambah/kurangi soal bergambar agar mencapai '+targetGambar+' soal.'):'Kelas bawah memakai poin 11.');
+  add(11,'Soal bergambar kelas bawah','50% (sekitar 9 dari 18)',!atas?(jGambar+' soal ('+persen+'%)'):'Tidak berlaku',!atas?((persen>=40&&persen<=60)?'Lulus':(Math.abs(persen-50)<=15?'Perlu Perbaikan':'Tidak Sesuai')):'Lulus',!atas?('Tambah/kurangi soal bergambar agar mencapai '+targetGambar+' soal.'):'Kelas atas memakai poin 10.');
+  add(12,'PG kelas atas 4 pilihan','4 pilihan (a, b, c, d)',atas?(avgOpsi+' pilihan rata-rata'):'Tidak berlaku',atas?((avgOpsi===4)?'Lulus':'Tidak Sesuai'):'Lulus',atas?('Pastikan setiap PG punya 4 opsi a-d.'):'Kelas bawah memakai poin 13.');
+  add(13,'PG kelas bawah 3 pilihan','3 pilihan (a, b, c)',!atas?(avgOpsi+' pilihan rata-rata'):'Tidak berlaku',!atas?((avgOpsi===3)?'Lulus':'Tidak Sesuai'):'Lulus',!atas?('Pastikan setiap PG punya 3 opsi a-c.'):'Kelas atas memakai poin 12.');
+  add(14,'Pengetikan rapi + Numbering','Rapi, pakai Numbering',getChk('numbering'),chkStatus(getChk('numbering')),'Gunakan Numbering otomatis di Word, jangan ketik nomor manual.');
+  add(15,'Titik tengah 3, akhir 4','Tengah ..., akhir ....',getChk('titik'),chkStatus(getChk('titik')),'Periksa tiap soal: tengah 3 titik, akhir 4 titik.');
+  const st16=hasLowerOpt&&!hasUpperOpt?'Lulus':hasUpperOpt?'Tidak Sesuai':'Perlu Perbaikan';
+  add(16,'Opsi PG huruf kecil a, b, c, d','a, b, c, d (kecil)',hasUpperOpt?'Masih ada A, B, C, D kapital':hasLowerOpt?'Sudah a, b, c, d kecil':'Belum terdeteksi',st16,'Ubah label opsi PG dari A, B, C, D menjadi huruf kecil a, b, c, d.');
+  const fmt2=[['17','Kata setelah a, b, c, d sesuai kaidah','Nama kapital, kata biasa kecil',getChk('kapital')],['18','Gambar/teks diulang jika dipakai lagi','Cantumkan lagi',getChk('ulang')],['19','Posisi gambar','Kiri atau atas soal',getChk('posisiGambar')],['20','Teks cerita diberi tabel','Ada tabel',getChk('tabelCerita')]];
+  fmt2.forEach(r=>{add(r[0],r[1],r[2],r[3],chkStatus(r[3]),r[3]==='Ya'?'Pertahankan.':r[3]==='Tidak'?'Perbaiki sesuai SOP.':'Cek dan isi checklist.');});
+  const lulus=rows.filter(r=>r.status==='Lulus').length; const skor=Math.round(lulus/rows.length*100);
+  const statusOverall=skor>=90?'SIAP DIKIRIM KE KOORDINATOR':skor>=70?'PERLU REVISI RINGAN':'PERLU REVISI BESAR';
+  let bloomNote='';
+  if(atas && hots===0) bloomNote='Kelas atas belum ada HOTS (C4-C6). Tambah minimal 2 soal C4, usahakan ada C5/C6.';
+  else if(cVals[0]/totalBloom>0.7) bloomNote='Terlalu banyak hafalan (C1 dominan '+Math.round(cVals[0]/totalBloom*100)+'%). Tambah C3-C4.';
+  else if(!atas && hots>0 && cVals[4]+cVals[5]>2) bloomNote='Kelas bawah sudah ada C5/C6 cukup banyak, pastikan bahasanya sederhana dan stimulusnya konkret.';
+  else bloomNote='Sebaran Bloom sudah cukup baik. Pertahankan variasi C1-C6 sesuai kelas.';
+  let html='<div class="card"><h2>3. Hasil Analisis</h2><div class="row" style="align-items:center"><div style="font-size:44px;font-weight:900">'+skor+'</div><div><span class="badge '+(skor>=90?'ok':skor>=70?'warn':'bad')+'">'+statusOverall+'</span><p class="small">Skor kepatuhan SOP 1-20: '+lulus+' dari 20 poin lulus. Total soal '+total+' (target '+totalTarget+'), total nilai maks '+nilai+' (target '+nilaiMax+'), gambar '+jGambar+' soal ('+persen+'%, target '+targetPersen+'%).</p></div></div><div class="bar" style="margin-top:10px"><div style="width:'+skor+'%"></div></div>';
+  html+='<h3>Profil Taksonomi Bloom (dari stem saja)</h3><p class="small">LOTS C1-C3: '+lots+' soal | HOTS C4-C6: '+hots+' soal. '+bloomNote+'</p>';
+  html+='<div class="grid"><div>C1 Mengingat: '+cVals[0]+' soal</div><div>C2 Memahami: '+cVals[1]+' soal</div><div>C3 Mengaplikasikan: '+cVals[2]+' soal</div><div>C4 Menganalisis: '+cVals[3]+' soal</div><div>C5 Mengevaluasi: '+cVals[4]+' soal</div><div>C6 Mencipta: '+cVals[5]+' soal</div></div>';
+  html+='<h3>Detail Per Soal - KKO dari Stem</h3><table><tr><th>No</th><th>Jenis</th><th>Stem yang Dianalisis</th><th>KKO</th><th>Bloom</th></tr>';
+  items.forEach(it=>{html+='<tr><td>'+it.no+'</td><td>'+it.jenis+'</td><td>'+it.stem.replace(/</g,'&lt;').slice(0,180)+'</td><td>'+(it.kko||'-')+'</td><td>'+(it.bloom||'Belum terdeteksi')+'</td></tr>';});
+  html+='</table><p class="small">Opsi jawaban tidak dihitung. Contoh: stem Bandingkan (C4) tetap C4 walau opsi mengandung kata menyebutkan / menghitung.</p>';
+  html+='<h3>Tabel 20 Poin SOP</h3><table><tr><th>No</th><th>Poin</th><th>Target</th><th>Hasil</th><th>Status</th><th>Saran</th></tr>';
+  rows.forEach(r=>{html+='<tr><td>'+r.no+'</td><td>'+r.poin+'</td><td>'+r.target+'</td><td>'+r.hasil+'</td><td>'+statusBadge(r.status)+'</td><td>'+r.saran+'</td></tr>';});
+  html+='</table>';
+  html+='<h3>Saran Perbaikan Prioritas</h3><ul>';
+  rows.filter(r=>r.status!=='Lulus').slice(0,5).forEach(r=>{html+='<li><b>Poin '+r.no+' - '+r.poin+':</b> '+r.saran+'</li>';});
+  if(rows.filter(r=>r.status!=='Lulus').length===0) html+='<li>Semua poin SOP sudah lulus. Pertahankan kualitas soal.</li>';
+  html+='</ul></div>';
+  document.getElementById('hasil').innerHTML=html;
+  window.scrollTo({top:document.getElementById('hasil').offsetTop-20,behavior:'smooth'});
+  const rec={tanggal:new Date().toLocaleString('id-ID'),guru:document.getElementById('guru').value||'-',mapel:document.getElementById('mapel').value,kelas:kelasTerpilih,jenis:document.getElementById('jenis').value,skor:skor,total:total,nilai:nilai};
+  let arr=[]; try{arr=JSON.parse(localStorage.getItem('riwayat_soal')||'[]');}catch(e){} arr.unshift(rec); localStorage.setItem('riwayat_soal',JSON.stringify(arr.slice(0,20))); tampilRiwayat();
+}
+function tampilRiwayat(){let arr=[];try{arr=JSON.parse(localStorage.getItem('riwayat_soal')||'[]');}catch(e){} const el=document.getElementById('riwayat'); if(!arr.length){el.innerHTML='<p class="small">Belum ada riwayat.</p>';return;} el.innerHTML='<table><tr><th>Tanggal</th><th>Guru</th><th>Mapel</th><th>Kelas</th><th>Jenis</th><th>Skor</th><th>Total Soal</th><th>Nilai Maks</th></tr>'+arr.map(r=>'<tr><td>'+r.tanggal+'</td><td>'+r.guru+'</td><td>'+r.mapel+'</td><td>'+r.kelas+'</td><td>'+r.jenis+'</td><td>'+r.skor+'</td><td>'+r.total+'</td><td>'+r.nilai+'</td></tr>').join('')+'</table>';}
+function hapusRiwayat(){localStorage.removeItem('riwayat_soal');tampilRiwayat();}
+init();
+</script></body></html>
