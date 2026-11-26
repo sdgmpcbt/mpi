@@ -342,7 +342,6 @@
                         Buka Akses Generator QR
                     </button>
                 </form>
-                <p class="text-[11px] text-muted mt-4">PIN Default: <code class="bg-ivory px-1.5 py-0.5 rounded border border-hairline text-espresso">ADMIN2026</code></p>
             </div>
 
             <!-- Konten Utama Generator QR (Muncul setelah verifikasi PIN) -->
@@ -477,10 +476,10 @@
         // --- STORAGE KEYS ---
         const STORAGE_KEYS = {
             QR_DRAFT: 'katering_qr_draft_v2',
-            ADMIN_PIN: 'katering_admin_pin_v1'
+            ADMIN_PIN: 'katering_admin_pin_v2'
         };
 
-        const DEFAULT_ADMIN_PIN = 'ADMIN2026';
+        const DEFAULT_ADMIN_PIN = '9012*';
 
         let qrDraftStudents = [];
         let isAdminUnlocked = false;
